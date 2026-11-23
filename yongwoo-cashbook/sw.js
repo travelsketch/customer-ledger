@@ -1,5 +1,5 @@
 /* 용우입출금관리대장 서비스 워커 — 인터넷이 없어도 앱이 열리도록 파일을 기기에 보관합니다. */
-var CACHE = 'yongwoo-cashbook-v1.0.2';
+var CACHE = 'yongwoo-cashbook-v1.1.0';
 var ASSETS = [
   './',
   './index.html',
@@ -38,6 +38,8 @@ self.addEventListener('fetch', function (event) {
   var req = event.request;
   if (req.method !== 'GET') return;
   var url = new URL(req.url);
+  // 구글 로그인(GIS)과 드라이브 API 요청은 캐시하지 않고 그대로 네트워크로 보냅니다.
+  if (/(^|\.)(google\.com|googleapis\.com)$/.test(url.hostname)) return;
   if (url.origin !== self.location.origin) return;
 
   if (req.mode === 'navigate' || url.pathname.endsWith('/index.html')) {

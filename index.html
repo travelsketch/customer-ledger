@@ -317,6 +317,23 @@ a{color:var(--primary)}
 .ins-card .iprod{font-size:15.5px;margin-top:2px;color:var(--ink-soft)}
 .ins-card .imeta{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:7px;font-size:13.5px;color:var(--muted);font-variant-numeric:tabular-nums}
 
+/* ================= ☁️ 구글 드라이브 연동 ================= */
+.drive-bar{padding:8px 0 2px}
+.drive-btn{
+  width:100%;min-height:44px;display:flex;align-items:center;gap:8px;
+  padding:0 12px;border-radius:12px;background:rgba(255,255,255,.14);
+  border:1px solid rgba(255,255,255,.26);color:#fff;font-size:14.5px;font-weight:700;text-align:left
+}
+.drive-btn .drive-ico{font-size:17px;line-height:1;flex:none}
+.drive-btn .drive-txt{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.drive-btn .drive-hint{font-size:12.5px;font-weight:600;opacity:.85;white-space:nowrap;flex:none}
+.drive-btn:active{background:rgba(255,255,255,.3)}
+.drive-btn.on{background:#fff;color:var(--primary-dark);border-color:#fff}
+.drive-btn.on .drive-hint{opacity:.65}
+.drive-btn.sync{background:rgba(255,255,255,.34)}
+.drive-btn.warn{background:var(--warn-soft);color:var(--warn);border-color:#eccfa2}
+.drive-btn.warn .drive-hint{opacity:.85}
+
 /* ================= 설정 ================= */
 .set-group{background:#fff;border:1px solid #e2e9f2;border-radius:16px;box-shadow:var(--shadow);overflow:hidden;margin-bottom:12px}
 .set-group h3{font-size:15px;font-weight:800;color:var(--muted);padding:14px 16px 6px;background:#fff}
@@ -543,6 +560,14 @@ button.att-thumb{padding:0;border:0}
       <button class="icon-btn" id="btnSettings" aria-label="설정 및 백업" title="설정">⚙</button>
     </div>
 
+    <div class="drive-bar">
+      <button type="button" class="drive-btn" id="driveBarBtn" aria-label="구글 드라이브 자동 동기화 상태와 설정">
+        <span class="drive-ico" aria-hidden="true">☁️</span>
+        <span class="drive-txt" id="driveText">구글 드라이브 연결</span>
+        <span class="drive-hint" id="driveHint">PC·폰 자동 동기화</span>
+      </button>
+    </div>
+
     <div class="search-wrap">
       <span class="search-ico" aria-hidden="true">🔍</span>
       <input id="search" type="search" inputmode="search" autocomplete="off" enterkeyhint="search"
@@ -702,10 +727,11 @@ button.att-thumb{padding:0;border:0}
      저장소
      ========================================================= */
   var STORE_KEY = 'customerLedger.v1';
-  var APP_VERSION = '1.2.1';
+  var APP_VERSION = '1.3.0';
   var DAY = 86400000;
 
-  var db = { version: 1, customers: [] };
+  var db = { version: 1, customers: [], rev: 0, deleted: {}, fileIds: {} };
+  var lastSaved = {};   // 고객별 마지막 저장 내용 (무엇이 바뀌었는지 가려내기)
 
   function uid(){
     return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
@@ -716,7 +742,17 @@ button.att-thumb{padding:0;border:0}
       var raw = localStorage.getItem(STORE_KEY);
       if(!raw) return;
       var data = JSON.parse(raw);
-      if(data && Array.isArray(data.customers)) db = { version: 1, customers: data.customers.map(normalizeCustomer) };
+      if(data && Array.isArray(data.customers)){
+        db = {
+          version: 1,
+          customers: data.customers.map(normalizeCustomer),
+          rev: Number(data.rev) || 0,
+          deleted: (data.deleted && typeof data.deleted === 'object') ? data.deleted : {},
+          fileIds: (data.fileIds && typeof data.fileIds === 'object') ? data.fileIds : {}
+        };
+        lastSaved = {};
+        db.customers.forEach(function(c){ lastSaved[c.id] = JSON.stringify(c); });
+      }
     }catch(e){
       console.warn('저장된 자료를 읽지 못했습니다.', e);
     }
@@ -725,7 +761,23 @@ button.att-thumb{padding:0;border:0}
   var saveWarned = false;
   function save(){
     try{
-      localStorage.setItem(STORE_KEY, JSON.stringify({ version: 1, customers: db.customers }));
+      var now = Date.now();
+      var ids = {};
+      db.customers.forEach(function(c){
+        var txt = JSON.stringify(c);
+        if(lastSaved[c.id] !== txt){ c.upd = now; txt = JSON.stringify(c); }   // 바뀐 고객만 수정 시각 기록
+        lastSaved[c.id] = txt;
+        ids[c.id] = 1;
+        if(db.deleted[c.id]) delete db.deleted[c.id];
+      });
+      Object.keys(lastSaved).forEach(function(id){
+        if(!ids[id]){ db.deleted[id] = now; delete lastSaved[id]; }            // 지운 고객 표시
+      });
+      db.rev = now;
+      localStorage.setItem(STORE_KEY, JSON.stringify({
+        version: 1, customers: db.customers, rev: db.rev, deleted: db.deleted, fileIds: db.fileIds
+      }));
+      if(DriveSync) DriveSync.markChange();
       return true;
     }catch(e){
       if(!saveWarned){
@@ -876,6 +928,7 @@ button.att-thumb{padding:0;border:0}
         return { id: String(f.id || uid()), name: String(f.name || '첨부파일'), type: String(f.type || ''), size: num(f.size) };
       }),
       sample: !!c.sample,
+      upd: Number(c.upd) || 0,
       createdAt: c.createdAt || new Date().toISOString(),
       updatedAt: c.updatedAt || c.createdAt || new Date().toISOString(),
       insurances: ins.map(function(i){
@@ -2881,6 +2934,10 @@ button.att-thumb{padding:0;border:0}
     body += '  <button class="set-item" id="sImport"><span class="si-ico">📥</span><span class="si-main"><span class="si-title">JSON 백업 불러오기</span><span class="si-sub">백업 파일로 되살리기</span></span><span>›</span></button>';
     body += '</div>';
 
+    body += '<div class="set-group"><h3>☁️ 구글 드라이브</h3>';
+    body += '  <button class="set-item" id="sDrive"><span class="si-ico">☁️</span><span class="si-main"><span class="si-title">구글 드라이브 자동 연동</span><span class="si-sub">' + esc(DriveSync.label()) + ' · PC와 폰 자료를 자동으로 맞춥니다</span></span><span>›</span></button>';
+    body += '</div>';
+
     body += '<div class="set-group"><h3>자료 관리</h3>';
     body += '  <button class="set-item" id="sSample"><span class="si-ico">🧪</span><span class="si-main"><span class="si-title">샘플 데이터 넣기</span><span class="si-sub">연습용 고객 4명 (샘플 표시됨)</span></span><span>›</span></button>';
     body += '  <button class="set-item" id="sRmSample"><span class="si-ico">🧹</span><span class="si-main"><span class="si-title">샘플만 지우기</span><span class="si-sub">직접 등록한 고객은 그대로</span></span><span>›</span></button>';
@@ -2889,7 +2946,7 @@ button.att-thumb{padding:0;border:0}
 
     body += '<div class="set-group"><h3>앱 정보</h3>';
     body += '  <button class="set-item" id="sInstall"><span class="si-ico">📱</span><span class="si-main"><span class="si-title">홈 화면에 추가</span><span class="si-sub">앱처럼 열기 (크롬·삼성 인터넷)</span></span><span>›</span></button>';
-    body += '  <div class="set-item" style="border-top:1px solid #f1f4f8"><span class="si-ico">🔒</span><span class="si-main"><span class="si-title">자료는 이 기기에만 저장됩니다</span><span class="si-sub">서버로 보내지 않으며, 브라우저 기록을 지우면 함께 사라집니다. 가끔 JSON 백업을 받아 두세요. (첨부 사진·PDF는 백업 파일에 들어가지 않습니다)</span></span></div>';
+    body += '  <div class="set-item" style="border-top:1px solid #f1f4f8"><span class="si-ico">🔒</span><span class="si-main"><span class="si-title">자료는 이 기기에 저장됩니다</span><span class="si-sub">구글 드라이브를 연결하지 않으면 어디로도 보내지 않습니다. 연결하면 내 드라이브의 앱 전용 공간에만 백업·동기화됩니다. (JSON 백업 파일에는 첨부 사진·PDF가 들어가지 않습니다)</span></span></div>';
     body += '  <div class="set-item" style="border-top:1px solid #f1f4f8"><span class="si-ico">ℹ️</span><span class="si-main"><span class="si-title">용우고객관리대장 v' + APP_VERSION + '</span><span class="si-sub">오프라인에서도 열립니다</span></span></div>';
     body += '</div>';
 
@@ -2905,6 +2962,7 @@ button.att-thumb{padding:0;border:0}
         $('#sSample').addEventListener('click', function(){ closeModal(); addSamples(); });
         $('#sRmSample').addEventListener('click', function(){ closeModal(); removeSamples(); });
         $('#sClear').addEventListener('click', clearAll);
+        $('#sDrive').addEventListener('click', function(){ closeModal(); openDriveSheet(); });
         $('#sInstall').addEventListener('click', function(){
           if(installEvent){
             installEvent.prompt();
@@ -2921,6 +2979,587 @@ button.att-thumb{padding:0;border:0}
     });
   }
   $('#btnSettings').addEventListener('click', openSettings);
+
+/* ═══════════════════════════════════════════════════════════════
+   ☁️ 구글 드라이브 자동 연동 (Google Identity Services + Drive v3)
+   - 온라인일 때만 GIS 스크립트를 불러옵니다. 오프라인이면 조용히 로컬 저장만.
+   - 자료는 구글 드라이브의 앱 전용 공간(appDataFolder)에만 올라갑니다.
+   ═══════════════════════════════════════════════════════════════ */
+var DRIVE_DEFAULT_CLIENT_ID = '91800638138-023926bb7buaaqi853kdire6j29plj8o.apps.googleusercontent.com';
+
+function createDriveSync(opt) {
+  'use strict';
+  var SCOPE = 'https://www.googleapis.com/auth/drive.appdata';
+  var KEY = opt.settingsKey;
+  var FILE = opt.fileName;
+  var MAX_ONE = opt.maxFileBytes || (8 * 1024 * 1024);
+  var MAX_ALL = opt.maxTotalBytes || (30 * 1024 * 1024);
+
+  var token = '';
+  var tokenExp = 0;
+  var gsiPromise = null;
+  var running = null;
+  var timer = null;
+  var status = 'off';       // off | syncing | on | offline | auth | error
+  var note = '';
+
+  /* ── 이 기기의 연동 설정 ── */
+  function conf() {
+    try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { return {}; }
+  }
+  function setConf(patch) {
+    var c = conf();
+    for (var k in patch) {
+      if (Object.prototype.hasOwnProperty.call(patch, k)) c[k] = patch[k];
+    }
+    try { localStorage.setItem(KEY, JSON.stringify(c)); } catch (e) {}
+  }
+  function isOn() { return !!conf().on; }
+  function clientId() { return String(conf().clientId || '').trim() || DRIVE_DEFAULT_CLIENT_ID; }
+
+  function ago(t) {
+    if (!t) return '';
+    var d = Date.now() - t;
+    if (d < 60000) return '방금';
+    if (d < 3600000) return Math.floor(d / 60000) + '분 전';
+    if (d < 86400000) return Math.floor(d / 3600000) + '시간 전';
+    return Math.floor(d / 86400000) + '일 전';
+  }
+  function label() {
+    if (running) return '동기화 중…';
+    if (!isOn()) return '미연결';
+    if (status === 'offline') return '오프라인';
+    if (status === 'auth') return '연결 확인 필요';
+    if (status === 'error') return '동기화 오류';
+    var t = Number(conf().lastSyncAt) || 0;
+    return t ? '연결됨 · ' + ago(t) + ' 동기화' : '연결됨 · 동기화 대기';
+  }
+  function paint() {
+    try { if (opt.onStatus) opt.onStatus(label(), status, note); } catch (e) {}
+  }
+  function setStatus(s, msg) { status = s; if (msg !== undefined) note = msg; paint(); }
+
+  /* ── GIS 스크립트 (필요할 때만, 온라인일 때만) ── */
+  function loadGis() {
+    if (window.google && window.google.accounts && window.google.accounts.oauth2) return Promise.resolve();
+    if (gsiPromise) return gsiPromise;
+    gsiPromise = new Promise(function (resolve, reject) {
+      if (!navigator.onLine) { reject(new Error('offline')); return; }
+      var s = document.createElement('script');
+      s.src = 'https://accounts.google.com/gsi/client';
+      s.async = true;
+      s.defer = true;
+      s.onload = function () {
+        if (window.google && window.google.accounts && window.google.accounts.oauth2) { resolve(); }
+        else { gsiPromise = null; reject(new Error('gsi-unavailable')); }
+      };
+      s.onerror = function () { gsiPromise = null; reject(new Error('gsi-failed')); };
+      document.head.appendChild(s);
+    });
+    return gsiPromise;
+  }
+
+  function askToken(interactive) {
+    return loadGis().then(function () {
+      return new Promise(function (resolve, reject) {
+        var done = false;
+        function finish(err, tk) {
+          if (done) return;
+          done = true;
+          if (tk) { resolve(tk); } else { reject(err || new Error('no-token')); }
+        }
+        try {
+          var client = window.google.accounts.oauth2.initTokenClient({
+            client_id: clientId(),
+            scope: SCOPE,
+            callback: function (resp) {
+              if (resp && resp.access_token) {
+                token = resp.access_token;
+                tokenExp = Date.now() + (Number(resp.expires_in) || 3600) * 1000 - 90000;
+                finish(null, token);
+              } else {
+                finish(new Error(resp && resp.error ? resp.error : 'no-token'));
+              }
+            },
+            error_callback: function (err) {
+              finish(new Error(err && err.type ? err.type : 'popup'));
+            }
+          });
+          client.requestAccessToken({ prompt: interactive ? 'consent' : '' });
+        } catch (e) { finish(e); }
+      });
+    });
+  }
+
+  function ensureToken(interactive) {
+    if (token && Date.now() < tokenExp) return Promise.resolve(token);
+    return askToken(interactive);
+  }
+
+  function timeoutFetch(url, opts) {
+    var o = opts || {};
+    if (window.AbortController) {
+      var ac = new AbortController();
+      o.signal = ac.signal;
+      var tm = setTimeout(function () { try { ac.abort(); } catch (e) {} }, 90000);
+      return fetch(url, o).then(function (r) { clearTimeout(tm); return r; }, function (e) { clearTimeout(tm); throw e; });
+    }
+    return fetch(url, o);
+  }
+
+  function api(url, opts) {
+    var o = opts || {};
+    o.headers = o.headers || {};
+    return ensureToken(false).then(function (tk) {
+      o.headers.Authorization = 'Bearer ' + tk;
+      return timeoutFetch(url, o);
+    }).then(function (res) {
+      if (res.status !== 401) return res;
+      token = '';
+      return ensureToken(false).then(function (tk) {
+        o.headers.Authorization = 'Bearer ' + tk;
+        return timeoutFetch(url, o);
+      });
+    });
+  }
+
+  function needOk(res) {
+    if (!res.ok) throw new Error('http-' + res.status);
+    return res.json().catch(function () { return {}; });
+  }
+
+  function findFile() {
+    var q = encodeURIComponent("name = '" + FILE + "' and trashed = false");
+    var url = 'https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&pageSize=5&orderBy=modifiedTime desc&q=' + q +
+      '&fields=' + encodeURIComponent('files(id,name,modifiedTime,size)');
+    return api(url).then(needOk).then(function (j) {
+      return (j && j.files && j.files[0]) || null;
+    });
+  }
+
+  function download(id) {
+    return api('https://www.googleapis.com/drive/v3/files/' + encodeURIComponent(id) + '?alt=media').then(function (res) {
+      if (!res.ok) throw new Error('http-' + res.status);
+      return res.text();
+    });
+  }
+
+  function upload(text, fileId) {
+    if (fileId) {
+      return api('https://www.googleapis.com/upload/drive/v3/files/' + encodeURIComponent(fileId) + '?uploadType=media', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json; charset=UTF-8' },
+        body: text
+      }).then(needOk);
+    }
+    var b = 'yongwoo' + Date.now().toString(36);
+    var body = '--' + b + '\r\n' +
+      'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
+      JSON.stringify({ name: FILE, parents: ['appDataFolder'], mimeType: 'application/json' }) + '\r\n' +
+      '--' + b + '\r\n' +
+      'Content-Type: application/json; charset=UTF-8\r\n\r\n' + text + '\r\n' +
+      '--' + b + '--';
+    return api('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id', {
+      method: 'POST',
+      headers: { 'Content-Type': 'multipart/related; boundary=' + b },
+      body: body
+    }).then(needOk);
+  }
+
+  /* ── 자료 합치기 (기기별 수정 시각 비교) ── */
+  function trim(payload) {
+    var files = payload.files || [], keep = [], total = 0, skipped = 0;
+    for (var i = 0; i < files.length; i++) {
+      var f = files[i];
+      var bytes = f && f.data ? Math.round(f.data.length * 0.75) : 0;
+      if (!f || !f.data || bytes > MAX_ONE || total + bytes > MAX_ALL) { skipped++; continue; }
+      total += bytes;
+      keep.push(f);
+    }
+    payload.files = keep;
+    payload.skippedFiles = skipped;
+    return payload;
+  }
+
+  function push(payload, fileId) {
+    if (!payload.rev) payload.rev = Date.now();
+    var text = JSON.stringify(trim(payload));
+    return upload(text, fileId).then(function () {
+      setConf({ lastSyncRev: Number(payload.rev) || 0, lastSyncAt: Date.now() });
+      setStatus('on');
+      return payload;
+    });
+  }
+
+  function merge(local, remote) {
+    var out = { app: local.app, version: local.version, rev: Date.now(), items: [], files: [], deleted: {}, skippedFiles: 0 };
+    var del = {};
+    [local.deleted || {}, remote.deleted || {}].forEach(function (d) {
+      Object.keys(d).forEach(function (k) {
+        del[k] = Math.max(Number(del[k]) || 0, Number(d[k]) || 0);
+      });
+    });
+    var pick = {}, fpick = {}, order = [], forder = [];
+    [local.items || [], remote.items || []].forEach(function (arr) {
+      arr.forEach(function (it) {
+        if (!it || !it.id) return;
+        var cur = pick[it.id];
+        if (!cur) { pick[it.id] = it; order.push(it.id); return; }
+        if ((Number(it.upd) || 0) > (Number(cur.upd) || 0)) pick[it.id] = it;
+      });
+    });
+    order.forEach(function (id) {
+      var it = pick[id];
+      if (del[id] && del[id] > (Number(it.upd) || 0)) return;   // 지운 자료
+      out.items.push(it);
+      delete del[id];
+    });
+    [local.files || [], remote.files || []].forEach(function (arr) {
+      arr.forEach(function (f) {
+        if (!f || !f.id) return;
+        var cur = fpick[f.id];
+        if (!cur) { fpick[f.id] = f; forder.push(f.id); return; }
+        if (!cur.data && f.data) fpick[f.id] = f;
+      });
+    });
+    forder.forEach(function (id) {
+      if (del[id]) return;
+      out.files.push(fpick[id]);
+    });
+    out.deleted = del;
+    return out;
+  }
+
+  function run() {
+    return findFile().then(function (f) {
+      if (!f) {
+        return Promise.resolve(opt.build()).then(function (local) { return push(local, null); }).then(function () { return true; });
+      }
+      return download(f.id).then(function (text) {
+        var remote = null;
+        try { remote = JSON.parse(text); } catch (e) { remote = null; }
+        if (!remote || remote.app !== opt.app || !Array.isArray(remote.items)) {
+          return Promise.resolve(opt.build()).then(function (local) { return push(local, f.id); }).then(function () { return true; });
+        }
+        var lastRev = Number(conf().lastSyncRev) || 0;
+        var localRev = Number(opt.rev()) || 0;
+        var remoteRev = Number(remote.rev) || 0;
+        var localChanged = localRev > lastRev;
+        var remoteChanged = remoteRev > lastRev;
+        if (!localChanged && !remoteChanged) {
+          setConf({ lastSyncAt: Date.now() });
+          setStatus('on');
+          return true;
+        }
+        if (remoteChanged && !localChanged) {
+          return Promise.resolve(opt.apply(remote)).then(function () {
+            setConf({ lastSyncRev: remoteRev, lastSyncAt: Date.now() });
+            setStatus('on');
+            return true;
+          });
+        }
+        if (localChanged && !remoteChanged) {
+          return Promise.resolve(opt.build()).then(function (local) { return push(local, f.id); }).then(function () { return true; });
+        }
+        return Promise.resolve(opt.build()).then(function (local) {
+          var merged = merge(local, remote);
+          return Promise.resolve(opt.apply(merged)).then(function () {
+            return push(merged, f.id);
+          }).then(function () { return true; });
+        });
+      });
+    });
+  }
+
+  function sync(manual) {
+    if (running) return running;
+    if (!isOn()) { paint(); return Promise.resolve(false); }
+    if (!navigator.onLine) { setStatus('offline'); return Promise.resolve(false); }
+    running = run().then(function () {
+      running = null;
+      setStatus('on');
+      return true;
+    }).catch(function (err) {
+      running = null;
+      var m = String((err && err.message) || err || '');
+      if (!navigator.onLine || m === 'offline' || m === 'gsi-failed' || m === 'Failed to fetch' || m === 'Load failed' || m === 'http-0') {
+        setStatus('offline', m);
+      } else if (m === 'popup' || m === 'popup_failed_to_open' || m === 'access_denied' || m === 'interaction_required' || m === 'no-token') {
+        setStatus('auth', m);
+      } else {
+        setStatus('error', m);
+      }
+      return false;
+    });
+    setStatus('syncing');
+    return running;
+  }
+
+  function connect() {
+    if (!navigator.onLine) { setStatus('offline'); return Promise.reject(new Error('offline')); }
+    setStatus('syncing');
+    return loadGis().then(function () {
+      return askToken(true);
+    }).then(function () {
+      setConf({ on: true, lastSyncRev: 0 });
+      return sync(true);
+    }).catch(function (err) {
+      setConf({ on: false });
+      var m = String((err && err.message) || '');
+      if (!navigator.onLine) setStatus('offline', m);
+      else if (m === 'gsi-failed' || m === 'gsi-unavailable') setStatus('error', m);
+      else setStatus('auth', m);
+      throw err;
+    });
+  }
+
+  function disconnect() {
+    setConf({ on: false, lastSyncRev: 0 });
+    token = '';
+    tokenExp = 0;
+    if (timer) { clearTimeout(timer); timer = null; }
+    setStatus('off');
+    return Promise.resolve(true);
+  }
+
+  function markChange() {
+    if (!isOn()) return;
+    if (!navigator.onLine) { setStatus('offline'); return; }
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(function () { timer = null; sync(false); }, 1200);
+  }
+
+  function init() {
+    paint();
+    window.addEventListener('online', function () { if (isOn()) sync(false); else paint(); });
+    window.addEventListener('offline', function () { if (isOn()) setStatus('offline'); });
+    document.addEventListener('visibilitychange', function () { if (!document.hidden && isOn()) sync(false); });
+    window.addEventListener('focus', function () { if (isOn() && !document.hidden) sync(false); });
+    if (isOn()) setTimeout(function () { sync(false); }, 1800);
+    setInterval(function () { if (!running) paint(); }, 60000);
+  }
+
+  return {
+    init: init,
+    sync: sync,
+    connect: connect,
+    disconnect: disconnect,
+    markChange: markChange,
+    isOn: isOn,
+    label: label,
+    refresh: paint,
+    status: function () { return status; },
+    note: function () { return note; },
+    ago: ago,
+    clientId: clientId,
+    setClientId: function (v) { setConf({ clientId: String(v || '').trim() }); paint(); },
+    lastSyncAt: function () { return Number(conf().lastSyncAt) || 0; }
+  };
+}
+
+  /* =========================================================
+     ☁️ 구글 드라이브 자동 연동 (이 앱에 맞춘 연결고리)
+     ========================================================= */
+  var DRIVE_MAX_ONE = 8 * 1024 * 1024;    // 첨부 파일 하나 최대 8MB
+  var DRIVE_MAX_ALL = 30 * 1024 * 1024;   // 한 번에 올리는 첨부 합계 30MB
+
+  function b64FromBlob(blob){
+    return new Promise(function(resolve, reject){
+      var fr = new FileReader();
+      fr.onload = function(){
+        var s = String(fr.result || '');
+        var i = s.indexOf(',');
+        resolve(i >= 0 ? s.slice(i + 1) : s);
+      };
+      fr.onerror = function(){ reject(fr.error || new Error('read-failed')); };
+      fr.readAsDataURL(blob);
+    });
+  }
+  function blobFromB64(b64, type){
+    var bin = atob(String(b64 || ''));
+    var u8 = new Uint8Array(bin.length);
+    for(var i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+    return new Blob([u8], { type: type || 'application/octet-stream' });
+  }
+  function persistLocal(){
+    try{
+      localStorage.setItem(STORE_KEY, JSON.stringify({
+        version: 1, customers: db.customers, rev: db.rev, deleted: db.deleted, fileIds: db.fileIds
+      }));
+    }catch(e){}
+  }
+
+  function driveBuild(){
+    var now = Date.now();
+    var deleted = db.deleted || (db.deleted = {});
+    var known = db.fileIds || (db.fileIds = {});
+    var items = db.customers.map(function(c){
+      if(deleted[c.id]) delete deleted[c.id];
+      return c;
+    });
+    return idbList().then(function(recs){
+      var ids = {}, files = [], total = 0, jobs = [];
+      recs.forEach(function(r){
+        ids[r.id] = 1;
+        var size = Number(r.size) || (r.blob && r.blob.size) || 0;
+        if(!r.blob || size > DRIVE_MAX_ONE || total + size > DRIVE_MAX_ALL) return;
+        total += size;
+        jobs.push(b64FromBlob(r.blob).then(function(b64){
+          files.push({
+            id: r.id, customerId: r.customerId || '', name: r.name || '첨부파일',
+            type: r.type || '', size: size, addedAt: Number(r.addedAt) || 0, data: b64
+          });
+        }).catch(function(){}));
+      });
+      return Promise.all(jobs).then(function(){
+        Object.keys(known).forEach(function(id){ if(!ids[id] && !deleted[id]) deleted[id] = now; });
+        db.fileIds = ids;
+        persistLocal();
+        return { app: 'customer-ledger', version: 1, rev: Number(db.rev) || 0, items: items, deleted: deleted, files: files };
+      });
+    }).catch(function(err){
+      console.warn('첨부 파일을 준비하지 못해 고객 자료만 동기화합니다.', err);
+      return { app: 'customer-ledger', version: 1, rev: Number(db.rev) || 0, items: items, deleted: deleted, files: [] };
+    });
+  }
+
+  function driveApply(p){
+    db.customers = (p.items || []).map(normalizeCustomer);
+    db.deleted = {};
+    Object.keys(p.deleted || {}).forEach(function(k){ db.deleted[k] = Number(p.deleted[k]) || 0; });
+    db.customers.forEach(function(c){ if(db.deleted[c.id]) delete db.deleted[c.id]; });
+    db.rev = Number(p.rev) || Date.now();
+    var recs = [], ids = {};
+    (p.files || []).forEach(function(f){
+      if(!f || !f.id || !f.data) return;
+      try{
+        recs.push({
+          id: f.id, customerId: f.customerId || '', name: f.name || '첨부파일',
+          type: f.type || '', size: Number(f.size) || 0,
+          blob: blobFromB64(f.data, f.type), addedAt: Number(f.addedAt) || Date.now()
+        });
+        ids[f.id] = 1;
+      }catch(e){}
+    });
+    db.fileIds = ids;
+    lastSaved = {};
+    db.customers.forEach(function(c){ lastSaved[c.id] = JSON.stringify(c); });
+    persistLocal();
+    return idbDelete(Object.keys(db.deleted)).catch(function(){}).then(function(){
+      return idbPutAll(recs);
+    }).catch(function(){}).then(function(){
+      try{ render(); }catch(e){}
+      return true;
+    });
+  }
+
+  var DriveSync = createDriveSync({
+    app: 'customer-ledger',
+    settingsKey: 'customerLedger.drive.v1',
+    fileName: 'yongwoo-customer-ledger-sync.json',
+    maxFileBytes: DRIVE_MAX_ONE,
+    maxTotalBytes: DRIVE_MAX_ALL,
+    rev: function(){ return Number(db.rev) || 0; },
+    build: driveBuild,
+    apply: driveApply,
+    onStatus: function(text, st){ paintDrive(text, st); }
+  });
+
+  function paintDrive(text, st){
+    var btn = document.getElementById('driveBarBtn');
+    if(btn){
+      btn.className = 'drive-btn' + (st === 'on' ? ' on' : (st === 'syncing' ? ' sync' : ((st === 'auth' || st === 'error' || st === 'offline') ? ' warn' : '')));
+      var t = document.getElementById('driveText');
+      if(t) t.textContent = (!st || st === 'off') ? '구글 드라이브 연결' : text;
+      var h = document.getElementById('driveHint');
+      if(h) h.textContent = (!st || st === 'off') ? 'PC·폰 자동 동기화' : '눌러서 관리';
+    }
+    var sl = document.getElementById('driveSheetStatus');
+    if(sl) sl.textContent = text;
+  }
+
+  function openDriveSheet(){
+    var on = DriveSync.isOn();
+    var last = DriveSync.lastSyncAt();
+    var body = '';
+    body += '<div class="set-group">';
+    body += '  <div class="stat-row" style="padding:16px 16px 8px"><div class="stat" style="flex:1"><div class="sv" id="driveSheetStatus" style="font-size:17px">' + esc(DriveSync.label()) + '</div><div class="sl">동기화 상태</div></div></div>';
+    body += '  <div style="padding:0 16px 16px;color:var(--muted);font-size:14px;line-height:1.5">' +
+      (on ? '자료를 저장할 때마다 구글 드라이브의 <b>앱 전용 공간</b>에 자동으로 올리고, 다른 기기에서 앱을 열면 최신 자료를 받아 옵니다.'
+          : '한 번 연결하면 PC와 폰의 자료가 자동으로 같아집니다. 내 드라이브 목록에는 보이지 않는 앱 전용 공간만 씁니다. 고객 정보는 본인 계정 안에만 보관됩니다.') + '</div>';
+    body += '</div>';
+
+    if(on){
+      body += '<div class="set-group">';
+      body += '  <button class="set-item" id="dSync"><span class="si-ico">🔄</span><span class="si-main"><span class="si-title">지금 동기화</span><span class="si-sub">' + (last ? '마지막 동기화: ' + DriveSync.ago(last) : '아직 동기화한 적이 없습니다') + '</span></span><span>›</span></button>';
+      body += '  <button class="set-item danger" id="dOff"><span class="si-ico">🔌</span><span class="si-main"><span class="si-title">연결 해제</span><span class="si-sub">이 기기의 자료는 그대로 두고 자동 동기화만 끕니다</span></span><span>›</span></button>';
+      body += '</div>';
+    }else{
+      body += '<div class="set-group">';
+      body += '  <button class="set-item" id="dOn"><span class="si-ico">☁️</span><span class="si-main"><span class="si-title">구글 드라이브 연결</span><span class="si-sub">평소 쓰는 구글 계정으로 로그인하고 ‘허용’을 누르면 끝납니다</span></span><span>›</span></button>';
+      body += '</div>';
+    }
+
+    body += '<div class="set-group"><h3>고급 설정</h3>';
+    body += '  <div style="padding:14px 16px 4px"><label for="dClient" style="display:block;font-size:13.5px;color:var(--muted);margin-bottom:6px">OAuth 클라이언트 ID</label>' +
+            '<input id="dClient" type="text" autocapitalize="off" autocorrect="off" spellcheck="false" value="' + esc(DriveSync.clientId()) + '" style="width:100%;height:48px;border:1px solid var(--line);border-radius:10px;padding:0 12px;font-size:14px"></div>';
+    body += '  <button class="set-item" id="dSaveClient"><span class="si-ico">🔑</span><span class="si-main"><span class="si-title">클라이언트 ID 저장</span><span class="si-sub">다른 구글 프로젝트를 쓸 때만 바꾸세요</span></span><span>›</span></button>';
+    body += '</div>';
+
+    body += '<p style="color:var(--muted);font-size:13px;line-height:1.5;padding:0 4px 8px">※ 구글 드라이브를 연결하지 않아도 앱은 지금처럼 이 기기에만 저장하며 똑같이 동작합니다.</p>';
+
+    openModal({
+      title: '☁️ 구글 드라이브 연동',
+      body: body,
+      after: function(){
+        var onBtn = $('#dOn');
+        if(onBtn) onBtn.addEventListener('click', function(){
+          if(!navigator.onLine){ toast('인터넷에 연결된 뒤 다시 눌러 주세요.'); return; }
+          onBtn.disabled = true;
+          toast('구글 창에서 ‘허용’을 눌러 주세요.');
+          DriveSync.connect().then(function(){
+            closeModal();
+            toast('구글 드라이브에 연결했습니다. 이제 자동으로 동기화됩니다.');
+          }).catch(function(err){
+            onBtn.disabled = false;
+            var m = String((err && err.message) || '');
+            if(m === 'offline') toast('인터넷 연결을 확인해 주세요.');
+            else if(m === 'popup' || m === 'popup_failed_to_open') toast('팝업이 막혔습니다. 브라우저의 팝업 차단을 풀고 다시 눌러 주세요.');
+            else if(m === 'access_denied') toast('허용을 누르지 않아 연결하지 않았습니다.');
+            else toast('연결하지 못했습니다. 잠시 뒤 다시 시도해 주세요.');
+          });
+        });
+        var syncBtn = $('#dSync');
+        if(syncBtn) syncBtn.addEventListener('click', function(){
+          syncBtn.disabled = true;
+          DriveSync.sync(true).then(function(ok){
+            closeModal();
+            toast(ok ? '동기화했습니다.' : '지금은 동기화하지 못했습니다. 연결 상태를 확인해 주세요.');
+          });
+        });
+        var offBtn = $('#dOff');
+        if(offBtn) offBtn.addEventListener('click', function(){
+          ask({
+            title: '연결을 해제할까요?',
+            message: '이 기기의 자료는 그대로 남고, 자동 동기화만 멈춥니다.',
+            confirmLabel: '연결 해제',
+            danger: true
+          }).then(function(ok){
+            if(!ok) return;
+            DriveSync.disconnect().then(function(){ closeModal(); toast('연결을 해제했습니다.'); });
+          });
+        });
+        var saveBtn = $('#dSaveClient');
+        if(saveBtn) saveBtn.addEventListener('click', function(){
+          DriveSync.setClientId($('#dClient').value);
+          closeModal();
+          toast('클라이언트 ID를 저장했습니다.');
+        });
+      }
+    });
+  }
+
+  $('#driveBarBtn').addEventListener('click', openDriveSheet);
 
   /* =========================================================
      파일 선택 (가져오기)
@@ -2941,6 +3580,7 @@ button.att-thumb{padding:0;border:0}
      ========================================================= */
   load();
   render();
+  DriveSync.init();
 
   // 서비스 워커 (https 또는 localhost 에서만)
   if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
@@ -2965,6 +3605,10 @@ button.att-thumb{padding:0;border:0}
     setState: function(patch){ Object.assign(state, patch); render(); },
     listFiles: idbList,
     getFile: idbGet,
+    drive: DriveSync,
+    save: save,
+    driveBuild: driveBuild,
+    driveApply: driveApply,
     calcValue: calcCurrentValue,
     printPhotos: function(){ return printPhotos; }
   };
