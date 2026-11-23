@@ -515,15 +515,15 @@ def main():
         page.click("#sheetClose")
         page.wait_for_timeout(300)
 
-        print("\n[10] 화면 예시 저장")
+        print("\n[10] 샘플 노트 화면(검증용 캡처)")
         page.evaluate("addSamples()")
         page.wait_for_timeout(2200)
         page.click("#folderBar [data-folder='all']")
         page.wait_for_timeout(400)
-        page.screenshot(path=str(ROOT / "preview-mobile.png"))
+        page.screenshot(path=str(ART / "sample-list.png"))
         page.evaluate("() => { const n = S.notes.find(x => x.folderId === 'f-farm'); openEditor(n, false); }")
         page.wait_for_timeout(700)
-        page.screenshot(path=str(ROOT / "preview-editor.png"))
+        page.screenshot(path=str(ART / "sample-editor.png"))
         page.click("#edBack")
         page.wait_for_timeout(900)
 
