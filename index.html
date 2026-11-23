@@ -3466,6 +3466,7 @@ function createDriveSync(opt) {
   });
 
   function paintDrive(text, st){
+    if(typeof DriveSync !== 'undefined' && DriveSync && !DriveSync.isOn()) st = 'off';
     var btn = document.getElementById('driveBarBtn');
     if(btn){
       btn.className = 'drive-btn' + (st === 'on' ? ' on' : (st === 'syncing' ? ' sync' : ((st === 'auth' || st === 'error' || st === 'offline') ? ' warn' : '')));
@@ -3525,7 +3526,7 @@ function createDriveSync(opt) {
             var m = String((err && err.message) || '');
             if(m === 'offline') toast('인터넷 연결을 확인해 주세요.');
             else if(m === 'popup' || m === 'popup_failed_to_open') toast('팝업이 막혔습니다. 브라우저의 팝업 차단을 풀고 다시 눌러 주세요.');
-            else if(m === 'access_denied') toast('허용을 누르지 않아 연결하지 않았습니다.');
+            else if(m === 'access_denied' || m === 'popup_closed') toast('허용을 누르지 않아 연결하지 않았습니다.');
             else toast('연결하지 못했습니다. 잠시 뒤 다시 시도해 주세요.');
           });
         });

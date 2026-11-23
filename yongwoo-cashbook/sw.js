@@ -1,5 +1,5 @@
 /* 용우입출금관리대장 서비스 워커 — 인터넷이 없어도 앱이 열리도록 파일을 기기에 보관합니다. */
-var CACHE = 'yongwoo-cashbook-v1.1.0';
+var CACHE = 'yongwoo-cashbook-v1.1.0-r2';   // r2: 같은 버전의 화면 수정본 (캐시 갱신용)
 var ASSETS = [
   './',
   './index.html',
