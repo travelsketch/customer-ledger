@@ -1,5 +1,5 @@
 /* 용우고객관리대장 서비스 워커 — 오프라인에서도 앱이 열리도록 파일을 기기에 보관합니다. */
-var CACHE = 'customer-ledger-v1.2.0';
+var CACHE = 'customer-ledger-v1.2.1';
 var ASSETS = [
   './',
   './index.html',
