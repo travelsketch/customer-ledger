@@ -1,0 +1,2470 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>용우입출금관리대장</title>
+<meta name="description" content="입금·출금을 적고 계산기·영수증 사진·PDF·인쇄·엑셀 내보내기까지 되는 휴대폰 앱. 자료는 이 기기에만 저장됩니다.">
+<meta name="theme-color" content="#12558a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="용우입출금">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<style>
+:root{
+  --brand:#12558a; --brand-dark:#0b3f66; --brand-soft:#e6eff7;
+  --in:#0b6b3a; --in-strong:#0a5c32; --in-bg:#e7f5ec; --in-line:#bfe3cd;
+  --out:#b3261e; --out-strong:#951c16; --out-bg:#fdecea; --out-line:#f2c9c4;
+  --ink:#16202a; --muted:#56687a; --line:#d3dee9; --bg:#eef2f7; --card:#ffffff;
+  --radius:16px; --shadow:0 1px 2px rgba(16,42,67,.06),0 6px 18px rgba(16,42,67,.08);
+  --tap:48px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{
+  background:var(--bg); color:var(--ink);
+  font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic","맑은 고딕","Noto Sans KR","Noto Sans CJK KR",system-ui,-apple-system,sans-serif;
+  font-size:17px; line-height:1.5; -webkit-font-smoothing:antialiased;
+  padding-bottom:calc(96px + env(safe-area-inset-bottom));
+}
+button,input,select,textarea{font-family:inherit;font-size:17px;color:inherit}
+button{cursor:pointer;border:0;background:none}
+h1,h2,h3,p{margin:0}
+.hidden{display:none !important}
+[hidden]{display:none !important}
+.sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+
+/* ── 상단 바 ───────────────────────────── */
+.appbar{position:sticky;top:0;z-index:30;background:linear-gradient(135deg,#12558a,#0f6b66);color:#fff;box-shadow:0 2px 10px rgba(9,38,64,.22)}
+.appbar-in{max-width:760px;margin:0 auto;display:flex;align-items:center;gap:10px;padding:10px 14px calc(10px) 14px}
+.brand{display:flex;align-items:center;gap:10px;min-width:0;flex:1}
+.logo{width:42px;height:42px;border-radius:12px;background:#fff;color:var(--brand);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:22px;flex:none;box-shadow:inset 0 0 0 2px rgba(18,85,138,.12)}
+.brand h1{font-size:20px;font-weight:800;letter-spacing:-.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.brand .sub{font-size:14px;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.icon-btn{min-width:var(--tap);min-height:var(--tap);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:12px;font-size:22px;line-height:1;gap:2px;background:rgba(255,255,255,.12)}
+.icon-btn span{font-size:13px}
+.icon-btn:active{background:rgba(255,255,255,.24)}
+
+main{max-width:760px;margin:0 auto;padding:12px 12px 0}
+.card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px;margin-bottom:12px}
+
+/* ── 요약 ─────────────────────────────── */
+.summary{padding:12px 12px 14px}
+.period-tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;background:#e8eef5;border-radius:12px;padding:5px}
+.period-tabs button{min-height:44px;border-radius:9px;font-size:17px;font-weight:700;color:var(--muted)}
+.period-tabs button.on{background:#fff;color:var(--brand);box-shadow:0 1px 4px rgba(16,42,67,.16)}
+.range-row{display:flex;align-items:center;gap:6px;margin-top:8px;flex-wrap:wrap}
+.range-row label{display:flex;align-items:center;gap:6px;font-size:16px;color:var(--muted)}
+.range-row input[type=date]{min-height:44px;border:1.5px solid var(--line);border-radius:10px;padding:0 8px;background:#fff;font-size:16px;width:150px}
+.range-row .btn{min-height:44px}
+.period-label{margin:12px 2px 2px;font-size:16px;font-weight:700;color:var(--muted);text-align:center}
+.sum-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.sum{border-radius:12px;padding:10px 12px;border:1.5px solid transparent}
+.sum span{display:block;font-size:16px;font-weight:700;opacity:.9}
+.sum strong{display:block;font-size:25px;font-weight:800;letter-spacing:-.6px;line-height:1.25;word-break:break-all;font-variant-numeric:tabular-nums}
+.sum em{display:block;font-style:normal;font-size:16px;opacity:.8;margin-top:1px}
+.sum.in{background:var(--in-bg);border-color:var(--in-line);color:var(--in-strong)}
+.sum.out{background:var(--out-bg);border-color:var(--out-line);color:var(--out-strong)}
+.sum.bal{grid-column:1 / -1;background:#eef1f6;border-color:#cfd9e6;color:#0e2233;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.sum.bal strong{font-size:29px}
+.sum.bal.neg{background:#fff1ef;border-color:#eab6af;color:#8f1a13}
+
+/* ── 도구 ─────────────────────────────── */
+.tools{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:12px;margin-bottom:12px}
+.search-row{display:flex;gap:8px}
+.search-box{position:relative;flex:1;min-width:0}
+.search-box input[type=search]{width:100%;min-height:var(--tap);border:1.5px solid var(--line);border-radius:12px;padding:0 14px 0 46px;background:#f8fafc;font-size:17px}
+.search-box input:focus{outline:none;border-color:var(--brand);background:#fff}
+.search-box .mag{position:absolute;left:13px;top:50%;transform:translateY(-50%);font-size:16px;color:var(--muted);pointer-events:none}
+.btn{min-height:var(--tap);border-radius:12px;padding:0 14px;font-size:17px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1.5px solid var(--line);background:#fff;color:var(--ink)}
+.btn:active{transform:translateY(1px)}
+.btn:disabled{opacity:.55;cursor:default}
+.btn.ghost{background:#f4f7fa}
+.btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}
+.btn.danger{background:#fff;border-color:#e7b1ac;color:var(--out-strong)}
+.btn.soft-in{background:var(--in-bg);border-color:var(--in-line);color:var(--in-strong)}
+.btn.soft-out{background:var(--out-bg);border-color:var(--out-line);color:var(--out-strong)}
+.btn.calc-btn{background:#eaf4f2;border-color:#bfe0d8;color:#0d5f55;flex:none}
+.filter-row{display:flex;gap:8px;margin-top:10px;align-items:center}
+.type-tabs{display:flex;background:#e8eef5;border-radius:11px;padding:4px;gap:4px;flex:1}
+.type-tabs button{flex:1;min-height:44px;border-radius:8px;font-weight:700;font-size:17px;color:var(--muted)}
+.type-tabs button.on{background:#fff;color:var(--brand);box-shadow:0 1px 3px rgba(16,42,67,.15)}
+.type-tabs button[data-type=in].on{color:var(--in-strong)}
+.type-tabs button[data-type=out].on{color:var(--out-strong)}
+.filter-row .btn{flex:none;padding:0 10px;font-size:16px}
+.select-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px;padding:10px;background:#eef6ff;border:1.5px solid #c2dcf5;border-radius:12px}
+.select-bar .count{font-weight:800;color:var(--brand);margin-right:auto;font-size:17px}
+.select-bar .btn{min-height:44px;padding:0 12px;font-size:16px}
+
+.list-info{display:flex;justify-content:space-between;gap:8px;margin:2px 4px 8px;font-size:16px;color:var(--muted)}
+
+/* ── 목록 ─────────────────────────────── */
+.list{display:flex;flex-direction:column;gap:9px}
+.day-head{display:flex;justify-content:space-between;gap:8px;align-items:baseline;margin:8px 4px 0;font-size:16px;font-weight:800;color:#3d5163}
+.day-head .day-sum{font-weight:600;color:var(--muted);font-size:16px}
+.entry{position:relative;display:flex;gap:10px;align-items:flex-start;background:var(--card);border-radius:14px;box-shadow:var(--shadow);padding:12px 12px 12px 14px;border-left:6px solid var(--line);cursor:pointer}
+.entry.in{border-left-color:#1c9c5a}
+.entry.out{border-left-color:#d84a3b}
+.entry:active{background:#fbfdff}
+.entry-main{flex:1;min-width:0}
+.entry-top{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:3px}
+.badge{font-size:15px;font-weight:800;padding:2px 9px;border-radius:999px;line-height:1.5}
+.badge.in{background:var(--in-bg);color:var(--in-strong);border:1px solid var(--in-line)}
+.badge.out{background:var(--out-bg);color:var(--out-strong);border:1px solid var(--out-line)}
+.badge.sample{background:#fff6e0;color:#8a5b00;border:1px solid #f0d79a}
+.cat{font-size:15px;color:#31536f;background:#edf3f9;border-radius:6px;padding:1px 7px;font-weight:700}
+.entry-top .date{margin-left:auto;font-size:15px;color:var(--muted);white-space:nowrap}
+.entry-title{font-size:18px;font-weight:700;line-height:1.35;word-break:keep-all;overflow-wrap:anywhere}
+.entry-sub{margin-top:2px;font-size:16px;color:var(--muted);word-break:keep-all;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.entry-right{flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:6px;max-width:44%}
+.amount{font-size:20px;font-weight:800;letter-spacing:-.4px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.amount.in{color:var(--in-strong)}
+.amount.out{color:var(--out-strong)}
+.att-pill{display:inline-flex;align-items:center;gap:4px;font-size:15px;color:#3f566b;background:#f1f5f9;border-radius:999px;padding:2px 8px;white-space:nowrap}
+.thumb{width:52px;height:52px;border-radius:9px;object-fit:cover;border:1px solid var(--line);background:#eef2f7}
+.entry-check{flex:none;display:none;padding-top:2px}
+.entry-check input{width:26px;height:26px;accent-color:var(--brand)}
+body.selecting .entry-check{display:block}
+body.selecting .entry{padding-left:10px}
+.entry.selected{box-shadow:0 0 0 2.5px var(--brand), var(--shadow)}
+.empty{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);padding:30px 18px;text-align:center;color:var(--muted)}
+.empty .big{font-size:42px;line-height:1.2;margin-bottom:6px}
+.empty p{font-size:17px;margin-bottom:14px}
+
+/* ── 하단 고정 버튼 ───────────────────── */
+.bottom-bar{position:fixed;left:0;right:0;bottom:0;z-index:25;padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:linear-gradient(to top,rgba(238,242,247,.98) 60%,rgba(238,242,247,.6) 100%)}
+.bottom-in{max-width:760px;margin:0 auto;display:flex;gap:8px}
+.fab{flex:1;min-height:56px;border-radius:16px;background:linear-gradient(135deg,#12558a,#0f6b66);color:#fff;font-size:19px;font-weight:800;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 6px 16px rgba(12,66,100,.3)}
+.fab:active{transform:translateY(1px)}
+.fab.secondary{flex:none;width:60px;background:#fff;color:var(--brand);border:1.5px solid var(--line);box-shadow:var(--shadow);font-size:24px}
+
+/* ── 모달 공통 ─────────────────────────── */
+.modal{position:fixed;inset:0;z-index:60;display:flex;align-items:flex-end;justify-content:center;background:rgba(10,25,40,.45);padding:0}
+.modal[hidden]{display:none}
+.sheet{background:#fff;width:100%;max-width:760px;max-height:94vh;display:flex;flex-direction:column;border-radius:20px 20px 0 0;box-shadow:0 -8px 30px rgba(8,26,44,.28);animation:up .18s ease-out}
+@keyframes up{from{transform:translateY(24px);opacity:.6}to{transform:none;opacity:1}}
+.sheet-head{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line);flex:none;background:#fff;border-radius:20px 20px 0 0;position:sticky;top:0;z-index:2}
+.sheet-head h2{font-size:20px;font-weight:800;flex:1;min-width:0}
+.sheet-head .close{width:var(--tap);height:var(--tap);border-radius:12px;background:#f1f5f9;font-size:24px;color:var(--muted);flex:none}
+.sheet-body{overflow-y:auto;padding:14px;flex:1;-webkit-overflow-scrolling:touch}
+.sheet-foot{flex:none;display:flex;gap:8px;padding:10px 14px calc(10px + env(safe-area-inset-bottom));border-top:1px solid var(--line);background:#fff}
+.sheet-foot .btn{flex:1;min-height:52px;font-size:18px}
+.modal.full{align-items:stretch;padding:0}
+.modal.full .sheet{max-width:none;max-height:100vh;height:100vh;border-radius:0}
+.modal.full .sheet-head{border-radius:0}
+
+/* ── 입력 폼 ──────────────────────────── */
+.field{margin-bottom:14px}
+.field>label,.field .label{display:block;font-size:16px;font-weight:800;color:#33475a;margin-bottom:6px}
+.field .hint{font-size:15px;color:var(--muted);font-weight:400;margin-left:4px}
+.type-pick{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.type-pick button{min-height:56px;border-radius:13px;border:2px solid var(--line);background:#fff;font-size:19px;font-weight:800;color:var(--muted);display:flex;align-items:center;justify-content:center;gap:8px}
+.type-pick button[data-type=in].on{border-color:var(--in);background:var(--in-bg);color:var(--in-strong)}
+.type-pick button[data-type=out].on{border-color:var(--out);background:var(--out-bg);color:var(--out-strong)}
+input[type=text],input[type=date],input[type=number],input[type=search],select,textarea{width:100%;min-height:var(--tap);border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;background:#fff;font-size:17px}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px rgba(18,85,138,.12)}
+textarea{min-height:76px;resize:vertical;line-height:1.45}
+.amount-row{display:flex;gap:8px}
+.amount-row input{flex:1;font-size:24px;font-weight:800;text-align:right;letter-spacing:-.3px;min-height:56px}
+.amount-row .btn{flex:none;min-height:56px;padding:0 12px;font-size:19px}
+.cat-chips{display:flex;flex-wrap:wrap;gap:7px}
+.cat-chip{min-height:44px;padding:0 13px;border-radius:999px;border:1.5px solid var(--line);background:#fff;font-size:16px;font-weight:700;color:#3b5064}
+.cat-chip.on{background:var(--brand);border-color:var(--brand);color:#fff}
+.cat-custom{margin-top:8px}
+.method-pick{display:flex;flex-wrap:wrap;gap:7px}
+.method-pick button{min-height:44px;padding:0 14px;border-radius:10px;border:1.5px solid var(--line);background:#fff;font-weight:700;font-size:16px;color:#3b5064}
+.method-pick button.on{background:#eaf2fa;border-color:#9dbfe0;color:var(--brand)}
+.file-drop{display:flex;gap:8px;flex-wrap:wrap}
+.file-drop .btn{min-height:52px;flex:1;background:#f4f8fb;border-style:dashed;border-width:2px}
+.file-note{font-size:16px;color:var(--muted);margin-top:6px}
+.file-list{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.file-item{display:flex;align-items:center;gap:10px;background:#f8fafc;border:1px solid var(--line);border-radius:12px;padding:8px}
+.file-item img{width:58px;height:58px;object-fit:cover;border-radius:8px;flex:none;background:#e8eef5}
+.file-item .pdf-ico{width:58px;height:58px;border-radius:8px;background:#fdecea;color:#b3261e;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;flex:none}
+.file-item .fi-main{flex:1;min-width:0}
+.file-item .fi-name{font-size:16px;font-weight:700;word-break:break-all;line-height:1.3}
+.file-item .fi-size{font-size:15px;color:var(--muted)}
+.file-item .fi-del{width:44px;height:44px;border-radius:10px;background:#fff;border:1px solid var(--line);color:var(--out-strong);font-size:20px;flex:none}
+.form-error{background:#fdecea;border:1px solid #f2c9c4;color:#8f1a13;padding:10px 12px;border-radius:10px;margin-bottom:12px;font-weight:700;font-size:16px}
+
+/* ── 상세 ─────────────────────────────── */
+.detail-hero{border-radius:14px;padding:14px;margin-bottom:14px;text-align:center}
+.detail-hero.in{background:var(--in-bg);border:1.5px solid var(--in-line)}
+.detail-hero.out{background:var(--out-bg);border:1.5px solid var(--out-line)}
+.detail-hero .amt{font-size:30px;font-weight:800;letter-spacing:-.8px;font-variant-numeric:tabular-nums}
+.detail-hero.in .amt{color:var(--in-strong)}
+.detail-hero.out .amt{color:var(--out-strong)}
+.detail-hero .dt{font-size:16px;color:var(--muted);margin-top:2px}
+.dl{display:grid;grid-template-columns:88px 1fr;gap:9px 12px;font-size:17px;margin-bottom:16px}
+.dl dt{color:var(--muted);font-weight:700}
+.dl dd{margin:0;word-break:break-all;white-space:pre-wrap}
+.att-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px}
+.att-tile{position:relative;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#f8fafc}
+.att-tile img{width:100%;height:96px;object-fit:cover;display:block}
+.att-tile .pdf-tile{height:96px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;background:#fdecea;color:#b3261e;font-weight:800}
+.att-tile .cap{font-size:14px;padding:4px 6px;color:#45596c;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:#fff}
+.att-tile .rm{position:absolute;top:4px;right:4px;width:30px;height:30px;border-radius:50%;background:rgba(20,32,44,.72);color:#fff;font-size:16px;display:flex;align-items:center;justify-content:center}
+.help{background:#f4f8fb;border:1px solid #dbe7f1;border-radius:12px;padding:12px;font-size:16px;color:#33475a;line-height:1.65}
+.help b{color:var(--brand-dark)}
+.help ol{margin:6px 0 0;padding-left:20px}
+.help li{margin-bottom:4px}
+
+/* ── 계산기 ───────────────────────────── */
+.calc-sheet{max-width:520px;margin:0 auto}
+.calc-display{background:#0f2233;color:#fff;border-radius:14px;padding:12px 14px;text-align:right;margin-bottom:10px}
+#calcPrev{font-size:15px;color:#9fb6ca;min-height:22px;word-break:break-all}
+#calcExpr{font-size:34px;font-weight:800;letter-spacing:-1px;word-break:break-all;font-variant-numeric:tabular-nums;line-height:1.25}
+.calc-keys{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.calc-keys button{min-height:60px;border-radius:14px;background:#f1f5f9;font-size:23px;font-weight:800;color:#1b3244;border:1px solid #e2e9f0}
+.calc-keys button:active{background:#e2eaf2}
+.calc-keys button.op{background:#e7f0f8;color:var(--brand)}
+.calc-keys button.eq{background:var(--brand);color:#fff}
+.calc-keys button.fn{background:#fdecea;color:#a02019;font-size:20px}
+.calc-keys button.pct{background:#eef4f0;color:#0d6b45}
+.calc-apply{width:100%;min-height:56px;margin-top:10px;border-radius:14px;background:linear-gradient(135deg,#0b6b3a,#0f766e);color:#fff;font-size:19px;font-weight:800}
+.calc-help{font-size:16px;color:var(--muted);text-align:center;margin-top:8px}
+
+/* ── 내보내기 / 설정 ───────────────────── */
+.opt-list{display:flex;flex-direction:column;gap:10px}
+.opt{display:flex;align-items:center;gap:12px;border:1.5px solid var(--line);border-radius:13px;padding:12px;background:#fff;text-align:left;width:100%}
+.opt:active{background:#f7fafc}
+.opt .oi{width:44px;height:44px;border-radius:11px;background:#eef4f9;display:flex;align-items:center;justify-content:center;font-size:22px;flex:none}
+.opt .ot{flex:1;min-width:0}
+.opt .ot b{display:block;font-size:17px}
+.opt .ot span{display:block;font-size:15px;color:var(--muted);line-height:1.4}
+.opt .arrow{font-size:20px;color:#9fb0c0}
+.section-title{font-size:16px;font-weight:800;color:#41586c;margin:16px 2px 8px}
+.section-title:first-child{margin-top:0}
+.scope-row{display:flex;gap:8px;margin-bottom:12px;background:#eef3f8;padding:5px;border-radius:12px}
+.scope-row label{flex:1;text-align:center;min-height:44px;display:flex;align-items:center;justify-content:center;border-radius:9px;font-size:16px;font-weight:700;color:var(--muted);gap:6px}
+.scope-row input{width:20px;height:20px;accent-color:var(--brand)}
+.scope-row label:has(input:checked){background:#fff;color:var(--brand);box-shadow:0 1px 4px rgba(16,42,67,.14)}
+.settings-row{display:flex;justify-content:space-between;gap:10px;padding:10px 2px;border-bottom:1px dashed var(--line);font-size:17px}
+.settings-row b{font-weight:800}
+
+/* ── 알림 ─────────────────────────────── */
+#toast{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(20px);background:#12283a;color:#fff;padding:12px 18px;border-radius:12px;font-size:16px;font-weight:700;z-index:90;opacity:0;pointer-events:none;transition:.2s;max-width:92vw;text-align:center}
+#toast.show{opacity:1;transform:translateX(-50%)}
+#snackbar{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(20px);background:#1f2f3e;color:#fff;padding:10px 10px 10px 16px;border-radius:12px;display:flex;align-items:center;gap:10px;z-index:95;opacity:0;pointer-events:none;transition:.2s;box-shadow:0 8px 24px rgba(0,0,0,.25);max-width:94vw}
+#snackbar.show{opacity:1;transform:translateX(-50%);pointer-events:auto}
+#snackbar .msg{font-size:16px;font-weight:700}
+#snackbar button{min-height:44px;padding:0 14px;border-radius:9px;background:#3a4d5f;color:#fff;font-weight:800;font-size:16px;flex:none}
+
+/* ── 인쇄 미리보기 ─────────────────────── */
+.preview-wrap{background:#5a6b7c;flex:1;overflow:auto;padding:12px;display:flex;justify-content:center;align-items:flex-start}
+.preview-paper{background:#fff;transform-origin:top center;box-shadow:0 10px 30px rgba(0,0,0,.4);flex:none}
+.preview-toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 14px;background:#fff;border-bottom:1px solid var(--line)}
+.preview-toolbar .toggles{display:flex;gap:12px;flex-wrap:wrap;flex:1}
+.preview-toolbar label{display:flex;align-items:center;gap:7px;font-size:16px;font-weight:700;color:#3b5064;min-height:44px}
+.preview-toolbar input[type=checkbox]{width:22px;height:22px;accent-color:var(--brand)}
+
+/* ── 인쇄 문서 (화면 미리보기 + 실제 인쇄 공용) ── */
+.print-doc{width:210mm;min-height:297mm;background:#fff;color:#000;padding:13mm 12mm 14mm;font-family:"Malgun Gothic","맑은 고딕","Apple SD Gothic Neo","Noto Sans KR","Noto Sans CJK KR",sans-serif;font-size:10pt;line-height:1.42}
+.print-doc .doc-title{font-size:21pt;font-weight:800;text-align:center;letter-spacing:4px;margin:0 0 1.5mm}
+.print-doc .doc-name{text-align:center;font-size:9pt;letter-spacing:1px;color:#333;margin-bottom:5mm}
+.print-doc .doc-meta{display:flex;justify-content:space-between;align-items:flex-end;font-size:9pt;border-bottom:1.6px solid #000;padding-bottom:2mm;margin-bottom:2.5mm;gap:6mm}
+.print-doc .doc-meta div{white-space:nowrap}
+.print-doc table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:8.6pt}
+.print-doc th,.print-doc td{border:0.6pt solid #555;padding:1.5mm 1.2mm;vertical-align:middle;word-break:break-all}
+.print-doc th{background:#eaf0f6;font-weight:800;text-align:center;font-size:8.6pt}
+.print-doc td.c{text-align:center}
+.print-doc td.r{text-align:right;font-variant-numeric:tabular-nums}
+.print-doc td.in{color:#0a5c32;font-weight:700}
+.print-doc td.out{color:#a01c15;font-weight:700}
+.print-doc tr.total td{background:#f2f5f9;font-weight:800;border-top:1.2pt solid #000}
+.print-doc .doc-sum{display:flex;justify-content:flex-end;gap:6mm;margin-top:3mm;font-size:10.5pt;font-weight:800}
+.print-doc .doc-sum .s{display:flex;gap:2mm;align-items:baseline;padding:1.5mm 3mm;border:0.8pt solid #333;border-radius:1.5mm}
+.print-doc .doc-note{margin-top:6mm;font-size:8pt;color:#555;line-height:1.5}
+.print-doc .photos{margin-top:6mm;page-break-before:always}
+.print-doc .photos h3{font-size:12pt;text-align:center;margin:0 0 3mm;letter-spacing:2px}
+.print-doc .photo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:4mm}
+.print-doc .photo{border:0.6pt solid #888;border-radius:1.5mm;overflow:hidden}
+.print-doc .photo img{width:100%;height:52mm;object-fit:contain;background:#f4f6f8;display:block}
+.print-doc .photo .pc{font-size:7.6pt;padding:1.2mm;text-align:center;border-top:0.5pt solid #bbb;word-break:break-all}
+.print-doc .foot{margin-top:8mm;text-align:center;font-size:8pt;color:#666}
+.print-root{display:none}
+
+@media print{
+  @page{size:A4;margin:0}
+  html,body{background:#fff !important;padding:0 !important;margin:0 !important}
+  body>*{display:none !important}
+  .print-root{display:block !important}
+  .print-doc{width:210mm;min-height:0;padding:13mm 12mm;box-shadow:none;font-size:10pt}
+  .print-doc tr{page-break-inside:avoid}
+  .print-doc thead{display:table-header-group}
+  .print-doc .photos{page-break-before:always}
+  .print-doc .photo{page-break-inside:avoid}
+}
+@media (max-width:380px){
+  .amount{font-size:18px}
+  .entry-right{max-width:42%}
+}
+@media (max-width:420px){
+  .amount{font-size:19px}
+  .sum strong{font-size:23px}
+  .sum.bal strong{font-size:25px}
+  .filter-row .btn{padding:0 8px}
+  .filter-row{flex-wrap:wrap}
+  .type-tabs{flex:1 1 100%}
+  .filter-row .btn{flex:1}
+}
+@media (min-width:700px){
+  .appbar-in{padding-left:20px;padding-right:20px}
+  main{padding:16px 16px 0}
+}
+</style>
+</head>
+<body>
+
+<header class="appbar">
+  <div class="appbar-in">
+    <div class="brand">
+      <span class="logo" aria-hidden="true">₩</span>
+      <div style="min-width:0">
+        <h1>용우입출금관리대장</h1>
+        <p class="sub">입금·출금을 쉽고 간단하게</p>
+      </div>
+    </div>
+    <button class="icon-btn" id="btnSettings" aria-label="설정과 백업">⚙<span>설정</span></button>
+  </div>
+</header>
+
+<main>
+  <section class="card summary" aria-label="기간별 합계">
+    <div class="period-tabs" id="periodTabs" role="tablist">
+      <button type="button" data-period="month" class="on" role="tab">이번 달</button>
+      <button type="button" data-period="last" role="tab">지난 달</button>
+      <button type="button" data-period="all" role="tab">전체</button>
+      <button type="button" data-period="custom" role="tab">직접</button>
+    </div>
+    <div class="range-row" id="customRange" hidden>
+      <label>부터 <input type="date" id="fromDate"></label>
+      <label>까지 <input type="date" id="toDate"></label>
+      <button type="button" class="btn primary" id="btnApplyRange">적용</button>
+    </div>
+    <p class="period-label" id="periodLabel">이번 달</p>
+    <div class="sum-grid">
+      <div class="sum in">
+        <span>총 입금</span>
+        <strong id="sumIn">0원</strong>
+        <em id="cntIn">0건</em>
+      </div>
+      <div class="sum out">
+        <span>총 출금</span>
+        <strong id="sumOut">0원</strong>
+        <em id="cntOut">0건</em>
+      </div>
+      <div class="sum bal" id="balBox">
+        <span>잔액 (입금 − 출금)</span>
+        <strong id="sumBal">0원</strong>
+      </div>
+    </div>
+  </section>
+
+  <section class="tools" aria-label="검색과 도구">
+    <div class="search-row">
+      <div class="search-box">
+        <span class="mag" aria-hidden="true">🔍</span>
+        <input type="search" id="searchInput" placeholder="내용·거래처 검색" aria-label="검색">
+      </div>
+      <button type="button" class="btn calc-btn" id="btnCalc" aria-label="계산기 열기">🧮 계산기</button>
+    </div>
+    <div class="filter-row">
+      <div class="type-tabs" id="typeTabs">
+        <button type="button" data-type="all" class="on">전체</button>
+        <button type="button" data-type="in">입금</button>
+        <button type="button" data-type="out">출금</button>
+      </div>
+      <button type="button" class="btn ghost" id="btnSelect">☑ 선택</button>
+      <button type="button" class="btn ghost" id="btnPrint">🖨 인쇄</button>
+      <button type="button" class="btn ghost" id="btnExport">⬇ 내보내기</button>
+    </div>
+    <div class="select-bar" id="selectBar" hidden>
+      <span class="count" id="selCount">0건 선택</span>
+      <button type="button" class="btn ghost" id="btnSelectAll">전체 선택</button>
+      <button type="button" class="btn primary" id="btnPrintSelected">선택 인쇄</button>
+      <button type="button" class="btn ghost" id="btnSelectCancel">취소</button>
+    </div>
+  </section>
+
+  <div class="list-info">
+    <span id="listInfo">모두 0건</span>
+    <span id="storageLite"></span>
+  </div>
+
+  <div id="entryList" class="list" aria-live="polite"></div>
+
+  <div id="emptyState" class="empty" hidden>
+    <div class="big">📒</div>
+    <p id="emptyText">아직 기록이 없습니다.<br>아래 <b>＋ 입출금 입력</b>을 눌러 첫 기록을 남겨 보세요.</p>
+    <button type="button" class="btn soft-in" id="btnEmptySample">연습용 샘플 넣어 보기</button>
+  </div>
+</main>
+
+<div class="bottom-bar">
+  <div class="bottom-in">
+    <button type="button" class="fab" id="btnAdd">＋ 입출금 입력</button>
+    <button type="button" class="fab secondary" id="btnCalc2" aria-label="계산기">🧮</button>
+  </div>
+</div>
+
+<!-- ══ 입력/수정 ══ -->
+<div class="modal" id="formModal" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="formTitle">
+    <div class="sheet-head">
+      <h2 id="formTitle">입출금 입력</h2>
+      <button type="button" class="close" id="btnFormClose" aria-label="닫기">✕</button>
+    </div>
+    <div class="sheet-body">
+      <form id="entryForm" novalidate>
+        <div id="formError" class="form-error" hidden></div>
+        <div class="field">
+          <span class="label">구분</span>
+          <div class="type-pick" id="fTypePick">
+            <button type="button" data-type="in">↓ 입금</button>
+            <button type="button" data-type="out">↑ 출금</button>
+          </div>
+        </div>
+        <div class="field">
+          <label for="f_date">날짜</label>
+          <input type="date" id="f_date" required>
+        </div>
+        <div class="field">
+          <label for="f_amount">금액 (원)</label>
+          <div class="amount-row">
+            <input type="text" id="f_amount" inputmode="numeric" autocomplete="off" placeholder="0" aria-describedby="amtHint">
+            <button type="button" class="btn calc-btn" id="btnCalcFromForm" aria-label="계산기로 금액 계산">🧮</button>
+          </div>
+          <p class="file-note" id="amtHint">숫자만 넣으면 콤마가 저절로 붙습니다. 계산은 🧮 버튼으로 하세요.</p>
+        </div>
+        <div class="field">
+          <span class="label">분류</span>
+          <div class="cat-chips" id="fCats"></div>
+          <input type="text" class="cat-custom" id="f_categoryCustom" placeholder="분류 직접 입력 (예: 접대비)" autocomplete="off">
+        </div>
+        <div class="field">
+          <label for="f_party">거래처 <span class="hint">(선택)</span></label>
+          <input type="text" id="f_party" placeholder="예: 홍길동 고객, 삼성화재" autocomplete="off">
+        </div>
+        <div class="field">
+          <label for="f_desc">내용 <span class="hint">(선택)</span></label>
+          <input type="text" id="f_desc" placeholder="예: 11월 암보험 수수료" autocomplete="off">
+        </div>
+        <div class="field">
+          <span class="label">결제수단</span>
+          <div class="method-pick" id="fMethods"></div>
+        </div>
+        <div class="field">
+          <label for="f_memo">메모 <span class="hint">(선택)</span></label>
+          <textarea id="f_memo" placeholder="기억할 내용을 적어 두세요"></textarea>
+        </div>
+        <div class="field">
+          <span class="label">사진·PDF 첨부 <span class="hint">(영수증, 계약서 등 여러 개 가능)</span></span>
+          <div class="file-drop">
+            <button type="button" class="btn" id="btnPickFiles">🖼 사진 · PDF 고르기</button>
+            <button type="button" class="btn" id="btnCamera">📷 카메라 촬영</button>
+          </div>
+          <input type="file" id="f_files" accept="image/*,application/pdf" multiple hidden>
+          <input type="file" id="f_camera" accept="image/*" capture="environment" hidden>
+          <p class="file-note">사진은 저장할 때 긴 변 1600px·JPEG 품질 80%로 저절로 줄여 보관합니다(원본이 작으면 그대로). PDF는 그대로 보관됩니다. 사진과 PDF는 이 기기(브라우저 저장소)에만 보관됩니다.</p>
+          <div class="file-list" id="formFiles"></div>
+        </div>
+      </form>
+    </div>
+    <div class="sheet-foot">
+      <button type="button" class="btn ghost" id="btnFormCancel">취소</button>
+      <button type="button" class="btn primary" id="btnSave">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 상세 ══ -->
+<div class="modal" id="detailModal" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="detailTitle">
+    <div class="sheet-head">
+      <h2 id="detailTitle">내역 상세</h2>
+      <button type="button" class="close" id="btnDetailClose" aria-label="닫기">✕</button>
+    </div>
+    <div class="sheet-body" id="detailBody"></div>
+    <div class="sheet-foot">
+      <button type="button" class="btn danger" id="detailDelete">삭제</button>
+      <button type="button" class="btn ghost" id="detailPrintOne">인쇄</button>
+      <button type="button" class="btn primary" id="detailEdit">수정</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 계산기 ══ -->
+<div class="modal" id="calcModal" hidden>
+  <div class="sheet calc-sheet" role="dialog" aria-modal="true" aria-labelledby="calcTitle">
+    <div class="sheet-head">
+      <h2 id="calcTitle">계산기</h2>
+      <button type="button" class="close" id="btnCalcClose" aria-label="닫기">✕</button>
+    </div>
+    <div class="sheet-body">
+      <div class="calc-display">
+        <div id="calcPrev">&nbsp;</div>
+        <div id="calcExpr">0</div>
+      </div>
+      <div class="calc-keys" id="calcKeys">
+        <button type="button" class="fn" data-k="C">C</button>
+        <button type="button" class="fn" data-k="BACK" aria-label="한 글자 지우기">←</button>
+        <button type="button" class="pct" data-k="%">%</button>
+        <button type="button" class="op" data-k="÷">÷</button>
+        <button type="button" data-k="7">7</button>
+        <button type="button" data-k="8">8</button>
+        <button type="button" data-k="9">9</button>
+        <button type="button" class="op" data-k="×">×</button>
+        <button type="button" data-k="4">4</button>
+        <button type="button" data-k="5">5</button>
+        <button type="button" data-k="6">6</button>
+        <button type="button" class="op" data-k="−">−</button>
+        <button type="button" data-k="1">1</button>
+        <button type="button" data-k="2">2</button>
+        <button type="button" data-k="3">3</button>
+        <button type="button" class="op" data-k="+">+</button>
+        <button type="button" data-k="0">0</button>
+        <button type="button" data-k="00">00</button>
+        <button type="button" data-k=".">.</button>
+        <button type="button" class="eq" data-k="=">=</button>
+      </div>
+      <button type="button" class="calc-apply" id="btnCalcApply">금액에 바로 넣기</button>
+      <p class="calc-help">계산 결과를 입력 중인 금액 칸에 그대로 넣습니다.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 내보내기 ══ -->
+<div class="modal" id="exportModal" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="exportTitle">
+    <div class="sheet-head">
+      <h2 id="exportTitle">내보내기 · 백업</h2>
+      <button type="button" class="close" id="btnExportClose" aria-label="닫기">✕</button>
+    </div>
+    <div class="sheet-body">
+      <p class="section-title">내보낼 범위</p>
+      <div class="scope-row" id="exportScope">
+        <label><input type="radio" name="scope" value="current" checked> 지금 화면</label>
+        <label><input type="radio" name="scope" value="all"> 전체 기간</label>
+      </div>
+      <p class="file-note" id="scopeNote">지금 화면에 보이는 내역을 내보냅니다.</p>
+
+      <p class="section-title">엑셀 · 구글 시트</p>
+      <div class="opt-list">
+        <button type="button" class="opt" id="btnXlsx">
+          <span class="oi" style="background:#e7f5ec">📊</span>
+          <span class="ot"><b>엑셀 파일 (.xlsx)</b><span>엑셀·한셀에서 바로 열립니다. 날짜·금액 서식 포함</span></span>
+          <span class="arrow">›</span>
+        </button>
+        <button type="button" class="opt" id="btnCsv">
+          <span class="oi" style="background:#e7f5ec">📗</span>
+          <span class="ot"><b>구글 시트용 CSV</b><span>한글이 깨지지 않는 UTF-8 방식으로 저장</span></span>
+          <span class="arrow">›</span>
+        </button>
+      </div>
+
+      <p class="section-title">구글 시트에서 열기 (1·2·3)</p>
+      <div class="help">
+        <ol>
+          <li>구글 시트를 열고 <b>파일 → 가져오기</b>를 누릅니다.</li>
+          <li><b>업로드</b> 탭에서 방금 받은 <b>구글시트용 CSV</b> 파일을 고릅니다.</li>
+          <li>구분자 <b>쉼표</b>, 인코딩 <b>UTF-8</b> 그대로 두고 <b>데이터 가져오기</b>를 누릅니다.</li>
+        </ol>
+      </div>
+
+      <p class="section-title">백업 / 복원</p>
+      <div class="opt-list">
+        <button type="button" class="opt" id="btnJsonAll">
+          <span class="oi" style="background:#eaf1fa">💾</span>
+          <span class="ot"><b>전체 백업 파일 (JSON)</b><span>내역 + 첨부 사진·PDF까지 한 파일에 담습니다</span></span>
+          <span class="arrow">›</span>
+        </button>
+        <button type="button" class="opt" id="btnJsonEntries">
+          <span class="oi" style="background:#eaf1fa">📄</span>
+          <span class="ot"><b>내역만 백업 (JSON)</b><span>첨부 파일은 빼고 글자 기록만 저장</span></span>
+          <span class="arrow">›</span>
+        </button>
+        <button type="button" class="opt" id="btnRestorePick">
+          <span class="oi" style="background:#fff6e0">♻️</span>
+          <span class="ot"><b>백업 불러오기 (복원)</b><span>JSON 백업 파일에서 내역과 첨부를 되살립니다</span></span>
+          <span class="arrow">›</span>
+        </button>
+        <input type="file" id="restoreFile" accept="application/json,.json" hidden>
+      </div>
+      <p class="file-note" style="margin-top:12px">내보낸 파일은 휴대폰의 ‘다운로드’ 폴더에 저장됩니다.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 설정 ══ -->
+<div class="modal" id="settingsModal" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+    <div class="sheet-head">
+      <h2 id="settingsTitle">설정 · 도움말</h2>
+      <button type="button" class="close" id="btnSettingsClose" aria-label="닫기">✕</button>
+    </div>
+    <div class="sheet-body">
+      <p class="section-title">연습용 샘플</p>
+      <div class="help" style="margin-bottom:10px">샘플은 <b>‘연습’</b> 표시가 붙고, 실제 기록과 섞이지 않게 따로 지울 수 있습니다.</div>
+      <div class="file-drop">
+        <button type="button" class="btn soft-in" id="btnSampleAdd">샘플 데이터 넣기</button>
+        <button type="button" class="btn soft-out" id="btnSampleClear">샘플만 지우기</button>
+      </div>
+
+      <p class="section-title">저장 공간</p>
+      <div class="settings-row"><span>기록</span><b id="setEntryCount">0건</b></div>
+      <div class="settings-row"><span>첨부 파일</span><b id="setAttCount">0개</b></div>
+      <div class="settings-row"><span>사용 중인 공간</span><b id="setUsage">확인 중…</b></div>
+
+      <p class="section-title">이렇게 쓰세요</p>
+      <div class="help">
+        <b>기록</b> — 아래 <b>＋ 입출금 입력</b>을 누르고 구분·날짜·금액·분류를 고릅니다. 목록에서 한 건을 누르면 자세히 보기·수정·삭제·인쇄를 할 수 있습니다.<br><br>
+        <b>계산기</b> — 🧮 버튼으로 열고 계산한 뒤 <b>금액에 바로 넣기</b>를 누르면 금액 칸에 들어갑니다.<br><br>
+        <b>사진·PDF</b> — 입력 화면에서 영수증 사진이나 계약서 PDF를 여러 개 붙일 수 있습니다. 목록·상세에서 눌러 크게 보거나 열 수 있습니다.<br><br>
+        <b>인쇄</b> — 🖨 버튼은 지금 화면(검색·기간·구분) 그대로 A4로 인쇄합니다. <b>선택</b>을 눌러 원하는 것만 골라 인쇄할 수도 있습니다.<br><br>
+        <b>백업</b> — ⬇ 내보내기에서 엑셀(.xlsx)·구글시트용 CSV·JSON 백업을 받습니다. 폰을 바꾸기 전에는 <b>전체 백업 파일</b>을 꼭 받아 두세요.<br><br>
+        <b>안심</b> — 기록과 사진은 이 기기의 브라우저 안에만 저장되고 어디로도 보내지 않습니다. 다만 브라우저 기록을 지우면 함께 지워지니 백업을 받아 두세요.
+      </div>
+
+      <p class="section-title">위험한 작업</p>
+      <button type="button" class="btn danger" id="btnClearAll" style="width:100%;min-height:50px">모든 기록 지우기 (백업 먼저!)</button>
+      <p class="file-note" style="margin-top:10px" id="appVersion">용우입출금관리대장 v1.0.0</p>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 인쇄 미리보기 ══ -->
+<div class="modal full" id="printPreviewModal" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="printTitle">
+    <div class="sheet-head">
+      <h2 id="printTitle">인쇄 미리보기</h2>
+      <button type="button" class="close" id="btnPreviewClose" aria-label="닫기">✕</button>
+    </div>
+    <div class="preview-toolbar">
+      <div class="toggles">
+        <label><input type="checkbox" id="optPhotos"> 첨부 사진 함께 인쇄</label>
+        <label><input type="checkbox" id="optMemo" checked> 메모 포함</label>
+      </div>
+      <button type="button" class="btn primary" id="btnDoPrint">🖨 인쇄하기</button>
+    </div>
+    <div class="preview-wrap" id="previewWrap">
+      <div class="preview-paper" id="previewPaper"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 확인 창 ══ -->
+<div class="modal" id="confirmModal" hidden>
+  <div class="sheet" style="max-width:460px;border-radius:18px;margin:auto" role="alertdialog" aria-modal="true" aria-labelledby="confirmTitle">
+    <div class="sheet-head" style="border-radius:18px 18px 0 0">
+      <h2 id="confirmTitle">확인</h2>
+    </div>
+    <div class="sheet-body">
+      <p id="confirmText" style="font-size:17px;line-height:1.6"></p>
+    </div>
+    <div class="sheet-foot" style="border-radius:0 0 18px 18px">
+      <button type="button" class="btn ghost" id="confirmNo">취소</button>
+      <button type="button" class="btn danger" id="confirmYes">확인</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 사진 크게 보기 ══ -->
+<div class="modal" id="photoModal" hidden style="background:rgba(4,12,20,.92)">
+  <div style="position:absolute;inset:0;display:flex;flex-direction:column">
+    <div style="display:flex;justify-content:flex-end;padding:10px">
+      <button type="button" class="close" id="btnPhotoClose" style="width:48px;height:48px;border-radius:12px;background:rgba(255,255,255,.16);color:#fff;font-size:26px">✕</button>
+    </div>
+    <div style="flex:1;display:flex;align-items:center;justify-content:center;overflow:auto;padding:0 10px 20px">
+      <img id="photoBig" alt="첨부 사진 크게 보기" style="max-width:100%;max-height:100%;object-fit:contain;border-radius:8px">
+    </div>
+  </div>
+</div>
+
+<div id="toast" role="status"></div>
+<div id="snackbar"><span class="msg" id="snackMsg"></span><button type="button" id="snackUndo">되돌리기</button></div>
+<div class="print-root" id="printRoot"></div>
+
+<script>
+'use strict';
+/* ═══════════════════════════════════════════════════════════
+   용우입출금관리대장 — 앱 코드
+   자료는 이 기기의 IndexedDB 에만 저장됩니다. 외부 전송 없음.
+   ═══════════════════════════════════════════════════════════ */
+
+var $ = function (sel, root) { return (root || document).querySelector(sel); };
+var $$ = function (sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); };
+var APP_NAME = '용우입출금관리대장';
+var APP_VERSION = '1.0.0';
+var DB_NAME = 'yongwoo-cashbook';
+var DB_VER = 1;
+var ALL_CATS = ['보험수수료', '고객지원', '식비', '교통·주유', '사무·통신', '농장자재', '기타'];
+var ALL_METHODS = ['계좌이체', '카드', '현금', '기타'];
+var WEEKDAY = ['일', '월', '화', '수', '목', '금', '토'];
+
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+  });
+}
+function pad2(n) { return String(n).padStart(2, '0'); }
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+function isoOf(d) { return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); }
+function todayISO() { return isoOf(new Date()); }
+function parseISO(s) { var p = String(s || '').split('-').map(Number); return new Date(p[0], (p[1] || 1) - 1, p[2] || 1); }
+function isISODate(s) { return /^\d{4}-\d{2}-\d{2}$/.test(String(s || '')); }
+function monthRange(offset) {
+  var now = new Date();
+  var y = now.getFullYear(), m = now.getMonth() + offset;
+  return [isoOf(new Date(y, m, 1)), isoOf(new Date(y, m + 1, 0))];
+}
+function fmtWon(n) {
+  var v = Math.round(Number(n) || 0);
+  var sign = v < 0 ? '-' : '';
+  return sign + Math.abs(v).toLocaleString('ko-KR') + '원';
+}
+function fmtNum(n) { return (Math.round(Number(n) || 0)).toLocaleString('ko-KR'); }
+function fmtDateKr(iso) {
+  var d = parseISO(iso);
+  return (d.getMonth() + 1) + '월 ' + d.getDate() + '일 (' + WEEKDAY[d.getDay()] + ')';
+}
+function fmtDateDot(iso) { return String(iso || '').replace(/-/g, '.'); }
+function fmtDateTime(d) {
+  return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()) + ' ' +
+    pad2(d.getHours()) + ':' + pad2(d.getMinutes());
+}
+function fmtSize(b) {
+  b = Number(b) || 0;
+  if (b < 1024) return b + 'B';
+  if (b < 1024 * 1024) return (b / 1024).toFixed(0) + 'KB';
+  return (b / 1024 / 1024).toFixed(1) + 'MB';
+}
+
+/* ── IndexedDB ─────────────────────────────────────────── */
+var _db = null;
+function dbOpen() {
+  if (_db) return Promise.resolve(_db);
+  return new Promise(function (resolve, reject) {
+    var rq = indexedDB.open(DB_NAME, DB_VER);
+    rq.onupgradeneeded = function () {
+      var db = rq.result;
+      if (!db.objectStoreNames.contains('entries')) {
+        var s = db.createObjectStore('entries', { keyPath: 'id' });
+        s.createIndex('date', 'date', { unique: false });
+      }
+      if (!db.objectStoreNames.contains('attachments')) {
+        var a = db.createObjectStore('attachments', { keyPath: 'id' });
+        a.createIndex('entryId', 'entryId', { unique: false });
+      }
+      if (!db.objectStoreNames.contains('meta')) {
+        db.createObjectStore('meta', { keyPath: 'key' });
+      }
+    };
+    rq.onsuccess = function () { _db = rq.result; resolve(_db); };
+    rq.onerror = function () { reject(rq.error); };
+    rq.onblocked = function () { reject(new Error('저장소가 다른 창에서 사용 중입니다. 앱을 모두 닫고 다시 열어 주세요.')); };
+  });
+}
+function dbAll(store) {
+  return dbOpen().then(function (db) {
+    return new Promise(function (resolve, reject) {
+      var t = db.transaction(store, 'readonly');
+      var r = t.objectStore(store).getAll();
+      r.onsuccess = function () { resolve(r.result || []); };
+      r.onerror = function () { reject(r.error); };
+    });
+  });
+}
+function dbPut(store, val) {
+  return dbOpen().then(function (db) {
+    return new Promise(function (resolve, reject) {
+      var t = db.transaction(store, 'readwrite');
+      t.objectStore(store).put(val);
+      t.oncomplete = function () { resolve(val); };
+      t.onerror = function () { reject(t.error); };
+    });
+  });
+}
+function dbPutMany(store, vals) {
+  if (!vals.length) return Promise.resolve();
+  return dbOpen().then(function (db) {
+    return new Promise(function (resolve, reject) {
+      var t = db.transaction(store, 'readwrite');
+      var os = t.objectStore(store);
+      vals.forEach(function (v) { os.put(v); });
+      t.oncomplete = function () { resolve(); };
+      t.onerror = function () { reject(t.error); };
+    });
+  });
+}
+function dbDel(store, key) {
+  return dbOpen().then(function (db) {
+    return new Promise(function (resolve, reject) {
+      var t = db.transaction(store, 'readwrite');
+      t.objectStore(store).delete(key);
+      t.oncomplete = function () { resolve(); };
+      t.onerror = function () { reject(t.error); };
+    });
+  });
+}
+function dbClear(store) {
+  return dbOpen().then(function (db) {
+    return new Promise(function (resolve, reject) {
+      var t = db.transaction(store, 'readwrite');
+      t.objectStore(store).clear();
+      t.oncomplete = function () { resolve(); };
+      t.onerror = function () { reject(t.error); };
+    });
+  });
+}
+
+/* ── 상태 ─────────────────────────────────────────────── */
+var S = {
+  entries: [],
+  atts: [],
+  period: 'month',
+  from: '',
+  to: '',
+  type: 'all',
+  q: '',
+  selecting: false,
+  selected: new Set(),
+  editing: null,
+  pending: [],
+  detailId: null,
+  printList: null,
+  formType: 'in',
+  formCat: ALL_CATS[0],
+  formMethod: '계좌이체',
+  lastDeleted: null,
+  undoUsed: false
+};
+var urlCache = new Map();
+
+function attURL(a) {
+  if (!a || !a.blob) return '';
+  if (!urlCache.has(a.id)) urlCache.set(a.id, URL.createObjectURL(a.blob));
+  return urlCache.get(a.id);
+}
+function forgetURL(id) {
+  if (urlCache.has(id)) { try { URL.revokeObjectURL(urlCache.get(id)); } catch (e) { } urlCache.delete(id); }
+}
+function attsOf(entryId) { return S.atts.filter(function (a) { return a.entryId === entryId; }); }
+function findEntry(id) { return S.entries.filter(function (e) { return e.id === id; })[0] || null; }
+function isImage(a) { return a && (/^image\//.test(a.type || '') || /\.(jpe?g|png|gif|webp|heic|heif|bmp)$/i.test(a.name || '')); }
+function isPdf(a) { return a && ((a.type || '') === 'application/pdf' || /\.pdf$/i.test(a.name || '')); }
+
+/* ── 데이터 불러오기 ──────────────────────────────────── */
+function loadData() {
+  return Promise.all([dbAll('entries'), dbAll('attachments')]).then(function (r) {
+    S.entries = r[0].map(function (e) {
+      return {
+        id: e.id, date: e.date, type: e.type, category: e.category || '기타',
+        party: e.party || '', desc: e.desc || '', amount: Number(e.amount) || 0,
+        method: e.method || '', memo: e.memo || '', sample: !!e.sample,
+        createdAt: e.createdAt || 0, updatedAt: e.updatedAt || 0
+      };
+    });
+    S.atts = r[1];
+    sortEntries();
+  });
+}
+function sortEntries() {
+  S.entries.sort(function (a, b) {
+    if (a.date !== b.date) return a.date < b.date ? 1 : -1;
+    return (b.createdAt || 0) - (a.createdAt || 0);
+  });
+}
+
+/* ── 기간·검색 필터 ──────────────────────────────────── */
+function setPeriod(p) {
+  S.period = p;
+  $$('#periodTabs button').forEach(function (x) { x.classList.toggle('on', x.getAttribute('data-period') === p); });
+  $('#customRange').hidden = p !== 'custom';
+  if (p === 'custom') {
+    if (!isISODate(S.from)) S.from = monthRange(0)[0];
+    if (!isISODate(S.to)) S.to = todayISO();
+    $('#fromDate').value = S.from;
+    $('#toDate').value = S.to;
+  }
+  renderAll();
+}
+function currentRange() {
+  if (S.period === 'month') return monthRange(0);
+  if (S.period === 'last') return monthRange(-1);
+  if (S.period === 'custom' && isISODate(S.from) && isISODate(S.to)) {
+    return (S.from <= S.to) ? [S.from, S.to] : [S.to, S.from];
+  }
+  return null;
+}
+function inPeriod(e) {
+  var r = currentRange();
+  if (!r) return true;
+  return e.date >= r[0] && e.date <= r[1];
+}
+function entryHay(e) {
+  return [e.date, e.category, e.party, e.desc, e.memo, e.method,
+    e.type === 'in' ? '입금' : '출금', String(e.amount), fmtNum(e.amount)].join(' ').toLowerCase();
+}
+function visibleEntries() {
+  var words = S.q.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  return S.entries.filter(function (e) {
+    if (!inPeriod(e)) return false;
+    if (S.type !== 'all' && e.type !== S.type) return false;
+    if (words.length) {
+      var hay = entryHay(e);
+      for (var i = 0; i < words.length; i++) if (hay.indexOf(words[i]) < 0) return false;
+    }
+    return true;
+  });
+}
+function periodEntries() { return S.entries.filter(inPeriod); }
+
+/* ── 요약 ─────────────────────────────────────────────── */
+function renderSummary() {
+  var list = periodEntries();
+  var sumIn = 0, sumOut = 0, cntIn = 0, cntOut = 0;
+  list.forEach(function (e) {
+    if (e.type === 'in') { sumIn += e.amount; cntIn++; } else { sumOut += e.amount; cntOut++; }
+  });
+  var bal = sumIn - sumOut;
+  $('#sumIn').textContent = fmtWon(sumIn);
+  $('#sumOut').textContent = fmtWon(sumOut);
+  $('#sumBal').textContent = fmtWon(bal);
+  $('#cntIn').textContent = cntIn + '건';
+  $('#cntOut').textContent = cntOut + '건';
+  $('#balBox').classList.toggle('neg', bal < 0);
+
+  var label;
+  if (S.period === 'month') label = (new Date().getMonth() + 1) + '월 (이번 달)';
+  else if (S.period === 'last') { var d = new Date(); var lm = new Date(d.getFullYear(), d.getMonth() - 1, 1); label = (lm.getMonth() + 1) + '월 (지난 달)'; }
+  else if (S.period === 'custom') label = isISODate(S.from) && isISODate(S.to) ? (fmtDateDot(S.from) + ' ~ ' + fmtDateDot(S.to)) : '직접 지정';
+  else label = '전체 기간';
+  var r = currentRange();
+  if (r && S.period !== 'custom') label += ' · ' + fmtDateDot(r[0]).slice(5) + '~' + fmtDateDot(r[1]).slice(5);
+  $('#periodLabel').textContent = label;
+}
+
+/* ── 목록 ─────────────────────────────────────────────── */
+function entryCardHTML(e) {
+  var atts = attsOf(e.id);
+  var imgs = atts.filter(isImage), pdfs = atts.filter(isPdf);
+  var thumb = imgs.length ? '<img class="thumb" src="' + attURL(imgs[0]) + '" alt="">' : '';
+  var pills = [];
+  if (imgs.length) pills.push('📷 ' + imgs.length);
+  if (pdfs.length) pills.push('📄 ' + pdfs.length);
+  var subParts = [];
+  if (e.party) subParts.push(e.party);
+  if (e.method) subParts.push(e.method);
+  if (e.memo) subParts.push(e.memo);
+  var title = e.desc || e.category || '(내용 없음)';
+  var sel = S.selected.has(e.id);
+  return '' +
+    '<div class="entry ' + e.type + (sel ? ' selected' : '') + '" data-id="' + esc(e.id) + '" tabindex="0" role="button" aria-label="' + esc(title + ' ' + fmtWon(e.amount)) + '">' +
+      '<div class="entry-check"><input type="checkbox" ' + (sel ? 'checked' : '') + ' tabindex="-1" aria-label="선택"></div>' +
+      '<div class="entry-main">' +
+        '<div class="entry-top">' +
+          '<span class="badge ' + e.type + '">' + (e.type === 'in' ? '입금' : '출금') + '</span>' +
+          (e.sample ? '<span class="badge sample">연습</span>' : '') +
+          '<span class="cat">' + esc(e.category) + '</span>' +
+        '</div>' +
+        '<p class="entry-title">' + esc(title) + '</p>' +
+        (subParts.length ? '<p class="entry-sub">' + esc(subParts.join(' · ')) + '</p>' : '') +
+        (pills.length ? '<p class="att-pill" style="margin-top:4px">📎 ' + pills.join(' · ') + '</p>' : '') +
+      '</div>' +
+      '<div class="entry-right">' +
+        '<span class="amount ' + e.type + '">' + (e.type === 'in' ? '+' : '−') + fmtNum(e.amount) + '원</span>' +
+        thumb +
+      '</div>' +
+    '</div>';
+}
+function renderList() {
+  var list = visibleEntries();
+  var box = $('#entryList');
+  var total = S.entries.length;
+  $('#listInfo').textContent = total ? ('보이는 내역 ' + list.length + '건 · 전체 ' + total + '건') : '기록 없음';
+
+  if (!list.length) {
+    box.innerHTML = '';
+    var empty = $('#emptyState');
+    empty.hidden = false;
+    if (!total) {
+      $('#emptyText').innerHTML = '아직 기록이 없습니다.<br>아래 <b>＋ 입출금 입력</b>을 눌러 첫 기록을 남겨 보세요.';
+      $('#btnEmptySample').hidden = false;
+    } else {
+      $('#emptyText').innerHTML = '이 기간·검색 조건에 맞는 내역이 없습니다.<br>기간이나 검색어를 바꿔 보세요.';
+      $('#btnEmptySample').hidden = true;
+    }
+    return;
+  }
+  $('#emptyState').hidden = true;
+
+  var html = '';
+  var groups = new Map();
+  list.forEach(function (e) {
+    if (!groups.has(e.date)) groups.set(e.date, []);
+    groups.get(e.date).push(e);
+  });
+  groups.forEach(function (items, date) {
+    var dayIn = 0, dayOut = 0;
+    items.forEach(function (e) { if (e.type === 'in') dayIn += e.amount; else dayOut += e.amount; });
+    var bits = [];
+    if (dayIn) bits.push('입 ' + fmtNum(dayIn));
+    if (dayOut) bits.push('출 ' + fmtNum(dayOut));
+    html += '<div class="day-head"><span>' + fmtDateKr(date) + '</span><span class="day-sum">' + bits.join(' · ') + '</span></div>';
+    items.forEach(function (e) { html += entryCardHTML(e); });
+  });
+  box.innerHTML = html;
+}
+
+function renderAll() {
+  renderSummary();
+  renderList();
+  updateSelectBar();
+  if (!$('#settingsModal').hidden) renderSettings();
+}
+
+/* ── 선택 모드 ────────────────────────────────────────── */
+function setSelecting(on) {
+  S.selecting = !!on;
+  document.body.classList.toggle('selecting', S.selecting);
+  $('#selectBar').hidden = !S.selecting;
+  $('#btnSelect').classList.toggle('primary', S.selecting);
+  if (!S.selecting) S.selected.clear();
+  renderList();
+  updateSelectBar();
+}
+function updateSelectBar() {
+  var n = S.selected.size;
+  $('#selCount').textContent = n + '건 선택';
+  $('#btnPrintSelected').disabled = n === 0;
+  $('#btnPrintSelected').style.opacity = n === 0 ? '.5' : '1';
+  var vis = visibleEntries();
+  var allOn = vis.length > 0 && vis.every(function (e) { return S.selected.has(e.id); });
+  $('#btnSelectAll').textContent = allOn ? '선택 해제' : '전체 선택';
+}
+function toggleSelect(id) {
+  if (S.selected.has(id)) S.selected.delete(id); else S.selected.add(id);
+  renderList(); updateSelectBar();
+}
+
+/* ── 알림 ─────────────────────────────────────────────── */
+var toastTimer = null;
+function toast(msg) {
+  var el = $('#toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function () { el.classList.remove('show'); }, 2200);
+}
+var snackTimer = null;
+function showUndo(msg, onUndo) {
+  var bar = $('#snackbar');
+  $('#snackMsg').textContent = msg;
+  bar.classList.add('show');
+  clearTimeout(snackTimer);
+  $('#snackUndo').onclick = function () {
+    bar.classList.remove('show');
+    if (typeof onUndo === 'function') onUndo();
+  };
+  snackTimer = setTimeout(function () { bar.classList.remove('show'); }, 6000);
+}
+
+/* ── 확인 창 ─────────────────────────────────────────── */
+var confirmResolve = null;
+function askChoice(text, choices, title) {
+  return new Promise(function (resolve) {
+    var modal = $('#confirmModal');
+    $('#confirmTitle').textContent = title || '확인';
+    $('#confirmText').innerHTML = text;
+    var foot = $('#confirmModal .sheet-foot');
+    foot.innerHTML = '';
+    choices.forEach(function (c) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'btn ' + (c.cls || 'ghost');
+      b.textContent = c.label;
+      b.setAttribute('data-choice', c.value);
+      b.onclick = function () { finish(c.value); };
+      foot.appendChild(b);
+    });
+    confirmResolve = function (v) { resolve(v); };
+    modal.hidden = false;
+    var first = foot.querySelector('[data-choice="' + choices[0].value + '"]');
+    if (first && choices[0].value === 'cancel') foot.lastElementChild.focus(); else if (first) first.focus();
+    function finish(v) {
+      modal.hidden = true;
+      foot.innerHTML = '<button type="button" class="btn ghost" id="confirmNo">취소</button><button type="button" class="btn danger" id="confirmYes">확인</button>';
+      var fn = confirmResolve; confirmResolve = null;
+      if (fn) fn(v);
+    }
+    modal._finish = finish;
+  });
+}
+function askConfirm(text, yesLabel, danger) {
+  return askChoice(text, [
+    { value: 'yes', label: yesLabel || '확인', cls: danger === false ? 'primary' : 'danger' },
+    { value: 'cancel', label: '취소', cls: 'ghost' }
+  ]).then(function (v) { return v === 'yes'; });
+}
+
+/* ═══════════════════════════════════════════════════════
+   입력 폼 · 상세 · 첨부 · 계산기
+   ═══════════════════════════════════════════════════════ */
+
+function buildPickers() {
+  $('#fCats').innerHTML = ALL_CATS.map(function (c) {
+    return '<button type="button" class="cat-chip" data-cat="' + esc(c) + '">' + esc(c) + '</button>';
+  }).join('');
+  $('#fMethods').innerHTML = ALL_METHODS.map(function (m) {
+    return '<button type="button" data-method="' + esc(m) + '">' + esc(m) + '</button>';
+  }).join('');
+}
+function setFormType(t) {
+  S.formType = t === 'out' ? 'out' : 'in';
+  $$('#fTypePick button').forEach(function (b) {
+    b.classList.toggle('on', b.getAttribute('data-type') === S.formType);
+  });
+}
+function setFormCat(cat) {
+  cat = cat || '기타';
+  var custom = $('#f_categoryCustom');
+  if (ALL_CATS.indexOf(cat) >= 0) {
+    S.formCat = cat; custom.value = '';
+  } else {
+    S.formCat = '기타'; custom.value = cat;
+  }
+  $$('#fCats .cat-chip').forEach(function (b) {
+    b.classList.toggle('on', b.getAttribute('data-cat') === S.formCat);
+  });
+}
+function setFormMethod(m) {
+  S.formMethod = ALL_METHODS.indexOf(m) >= 0 ? m : '기타';
+  $$('#fMethods button').forEach(function (b) {
+    b.classList.toggle('on', b.getAttribute('data-method') === S.formMethod);
+  });
+}
+function setAmount(v) {
+  var digits = String(v == null ? '' : v).replace(/[^0-9]/g, '');
+  digits = digits.replace(/^0+(?=\d)/, '');
+  $('#f_amount').value = digits ? Number(digits).toLocaleString('ko-KR') : '';
+}
+function readAmount() {
+  return Number(($('#f_amount').value || '').replace(/[^0-9]/g, '')) || 0;
+}
+function showFormError(msg) {
+  var box = $('#formError');
+  if (!msg) { box.hidden = true; box.textContent = ''; return; }
+  box.hidden = false; box.textContent = msg;
+  box.scrollIntoView({ block: 'center', behavior: 'smooth' });
+}
+
+function openForm(id) {
+  S.editing = id || null;
+  S.pending = [];
+  var e = id ? findEntry(id) : null;
+  $('#formTitle').textContent = e ? '내역 수정' : '입출금 입력';
+  $('#formError').hidden = true;
+  setFormType(e ? e.type : 'in');
+  $('#f_date').value = e ? e.date : todayISO();
+  setAmount(e ? e.amount : '');
+  setFormCat(e ? e.category : '기타');
+  $('#f_party').value = e ? e.party : '';
+  $('#f_desc').value = e ? e.desc : '';
+  setFormMethod(e ? e.method : '계좌이체');
+  $('#f_memo').value = e ? e.memo : '';
+  $('#f_files').value = '';
+  if (e) {
+    attsOf(e.id).forEach(function (a) {
+      S.pending.push({ id: a.id, name: a.name, type: a.type, size: a.size, blob: a.blob, existing: true });
+    });
+  }
+  renderFormFiles();
+  $('#formModal').hidden = false;
+  setTimeout(function () { $('#f_amount').focus(); }, 120);
+}
+function closeForm() {
+  $('#formModal').hidden = true;
+  S.pending.forEach(function (p) {
+    if (!p.existing) forgetURL(p.id);
+  });
+  S.pending = [];
+  S.editing = null;
+}
+function renderFormFiles() {
+  var box = $('#formFiles');
+  if (!S.pending.length) { box.innerHTML = ''; return; }
+  box.innerHTML = S.pending.map(function (p, i) {
+    var thumb = isImage(p)
+      ? '<img src="' + attURL(p) + '" alt="">'
+      : '<div class="pdf-ico">PDF</div>';
+    return '<div class="file-item" data-i="' + i + '">' + thumb +
+      '<div class="fi-main"><div class="fi-name">' + esc(p.name) + '</div>' +
+      '<div class="fi-size">' + fmtSize(p.size) +
+        (p.compressed ? ' · 압축 ' + fmtSize(p.origSize) + '→' + fmtSize(p.size) + (p.width ? ' (' + p.width + '×' + p.height + ')' : '') : '') +
+        (p.existing ? ' · 저장됨' : (p.compressed ? '' : ' · 새 파일')) + '</div></div>' +
+      '<button type="button" class="fi-del" data-del="' + i + '" aria-label="이 파일 빼기">✕</button></div>';
+  }).join('');
+}
+function guessType(f) {
+  if (f.type) return f.type;
+  if (/\.pdf$/i.test(f.name || '')) return 'application/pdf';
+  if (/\.(jpe?g|png|gif|webp|heic|heif|bmp)$/i.test(f.name || '')) return 'image/' + f.name.split('.').pop().toLowerCase();
+  return 'application/octet-stream';
+}
+function loadImageEl(file) {
+  return new Promise(function (resolve, reject) {
+    var url = URL.createObjectURL(file);
+    var img = new Image();
+    img.onload = function () { URL.revokeObjectURL(url); resolve(img); };
+    img.onerror = function () { URL.revokeObjectURL(url); reject(new Error('이미지를 읽지 못했습니다')); };
+    img.src = url;
+  });
+}
+/* 사진은 긴 변 1600px·JPEG 80%로 줄입니다. 이미 작고 가벼우면(긴 변 1600 이하 + 1MB 이하) 그대로,
+   줄인 결과가 원본보다 크면 원본을 씁니다. PDF·기타 파일은 손대지 않습니다. */
+var IMG_MAX_SIDE = 1600, IMG_QUALITY = 0.8, IMG_KEEP_BYTES = 1000000;
+function compressImage(file) {
+  var type = guessType(file);
+  if (!/^image\//.test(type) || /svg/i.test(type)) return Promise.resolve({ blob: file, name: file.name, changed: false });
+  return loadImageEl(file).then(function (img) {
+    var w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
+    if (!w || !h) return { blob: file, name: file.name, changed: false };
+    var scale = Math.min(1, IMG_MAX_SIDE / Math.max(w, h));
+    if (scale === 1 && file.size <= IMG_KEEP_BYTES) return { blob: file, name: file.name, changed: false, width: w, height: h };
+    var tw = Math.max(1, Math.round(w * scale)), th = Math.max(1, Math.round(h * scale));
+    var canvas = document.createElement('canvas');
+    canvas.width = tw; canvas.height = th;
+    var g = canvas.getContext('2d');
+    g.fillStyle = '#ffffff'; g.fillRect(0, 0, tw, th);
+    g.drawImage(img, 0, 0, tw, th);
+    return new Promise(function (resolve) {
+      canvas.toBlob(function (blob) {
+        if (!blob || (scale === 1 && blob.size >= file.size) || (blob.size >= file.size && file.size < 400000)) {
+          resolve({ blob: file, name: file.name, changed: false, width: w, height: h });
+        } else {
+          var base = (file.name || '사진').replace(/\.[^.]+$/, '');
+          resolve({ blob: blob, name: base + '.jpg', changed: true, origSize: file.size, width: tw, height: th });
+        }
+      }, 'image/jpeg', IMG_QUALITY);
+    });
+  }).catch(function () {
+    return { blob: file, name: file.name, changed: false };
+  });
+}
+function addFiles(fileList) {
+  var files = Array.prototype.slice.call(fileList || []);
+  if (!files.length) return Promise.resolve();
+  var saveBtn = $('#btnSave');
+  saveBtn.disabled = true;
+  var big = files.filter(function (f) { return f.size > 25 * 1024 * 1024; }).length;
+  toast(files.length > 1 ? '사진 ' + files.length + '장을 준비하는 중입니다…' : '사진을 준비하는 중입니다…');
+  var chain = Promise.resolve();
+  var added = 0;
+  files.forEach(function (f) {
+    chain = chain.then(function () {
+      return compressImage(f).then(function (r) {
+        S.pending.push({
+          id: uid(), name: r.name || f.name || ('첨부-' + (S.pending.length + 1)),
+          type: r.blob.type || guessType(f), size: r.blob.size, blob: r.blob, existing: false,
+          compressed: !!r.changed, origSize: r.origSize || f.size, width: r.width, height: r.height
+        });
+        added++;
+        renderFormFiles();
+      });
+    });
+  });
+  return chain.then(function () {
+    saveBtn.disabled = false;
+    renderFormFiles();
+    var shrunk = S.pending.filter(function (p) { return p.compressed && !p.existing; });
+    if (added) toast(added + '개 파일을 붙였습니다' + (shrunk.length ? ' (사진 ' + shrunk.length + '장 자동 압축)' : ''));
+    if (big) toast(big + '개 파일이 25MB를 넘습니다');
+  });
+}
+
+function saveEntry() {
+  var amount = readAmount();
+  var date = $('#f_date').value;
+  if (!isISODate(date)) { showFormError('날짜를 골라 주세요.'); return; }
+  if (!amount) { showFormError('금액을 넣어 주세요. 계산이 필요하면 🧮 버튼을 누르세요.'); return; }
+  showFormError('');
+  var cat = ($('#f_categoryCustom').value || '').trim() || S.formCat || '기타';
+  var base = S.editing ? findEntry(S.editing) : null;
+  var entry = {
+    id: base ? base.id : uid(),
+    date: date,
+    type: S.formType,
+    category: cat,
+    party: ($('#f_party').value || '').trim(),
+    desc: ($('#f_desc').value || '').trim(),
+    amount: amount,
+    method: S.formMethod,
+    memo: ($('#f_memo').value || '').trim(),
+    sample: base ? !!base.sample : false,
+    createdAt: base ? base.createdAt : Date.now(),
+    updatedAt: Date.now()
+  };
+  var keep = S.pending.filter(function (p) { return p.existing; }).map(function (p) { return p.id; });
+  var keepSet = new Set(keep);
+  var old = S.atts.filter(function (a) { return a.entryId === entry.id; });
+  var newAtts = S.pending.filter(function (p) { return !p.existing; });
+  var self = this;
+  dbPut('entries', entry).then(function () {
+    var jobs = [];
+    old.forEach(function (a) {
+      if (!keepSet.has(a.id)) jobs.push(dbDel('attachments', a.id).then(function () { forgetURL(a.id); }));
+    });
+    newAtts.forEach(function (p) {
+      jobs.push(dbPut('attachments', {
+        id: p.id, entryId: entry.id, name: p.name, type: p.type, size: p.size,
+        blob: p.blob, createdAt: Date.now()
+      }));
+    });
+    return Promise.all(jobs);
+  }).then(function () {
+    return loadData();
+  }).then(function () {
+    closeForm();
+    renderAll();
+    var shown = visibleEntries().some(function (x) { return x.id === entry.id; });
+    if (!shown) {
+      setPeriod('all');
+      toast((base ? '수정했습니다' : '저장했습니다') + ' · 전체 기간으로 보여 드립니다');
+    } else {
+      toast(base ? '수정했습니다' : '저장했습니다');
+    }
+  }).catch(function (err) {
+    console.error(err);
+    showFormError('저장하지 못했습니다: ' + (err && err.message ? err.message : '저장 공간을 확인해 주세요.'));
+  });
+}
+
+/* ── 상세 보기 ──────────────────────────────────────── */
+function openDetail(id) {
+  var e = findEntry(id);
+  if (!e) return;
+  S.detailId = id;
+  var atts = attsOf(id);
+  var title = e.desc || e.category || '(내용 없음)';
+  var html = '';
+  html += '<div class="detail-hero ' + e.type + '">' +
+    '<div class="amt">' + (e.type === 'in' ? '+' : '−') + fmtNum(e.amount) + '원</div>' +
+    '<div class="dt">' + (e.type === 'in' ? '입금' : '출금') + ' · ' + fmtDateKr(e.date) + (e.sample ? ' · 연습용' : '') + '</div>' +
+    '</div>';
+  html += '<dl class="dl">';
+  html += '<dt>분류</dt><dd>' + esc(e.category) + '</dd>';
+  html += '<dt>거래처</dt><dd>' + (e.party ? esc(e.party) : '<span style="color:#7d8fa0">없음</span>') + '</dd>';
+  html += '<dt>내용</dt><dd>' + esc(title) + '</dd>';
+  html += '<dt>결제수단</dt><dd>' + esc(e.method || '-') + '</dd>';
+  html += '<dt>메모</dt><dd>' + (e.memo ? esc(e.memo) : '<span style="color:#7d8fa0">없음</span>') + '</dd>';
+  html += '<dt>기록</dt><dd style="font-size:15px;color:#5b6b7b">' + fmtDateTime(new Date(e.updatedAt || e.createdAt || Date.now())) + '</dd>';
+  html += '</dl>';
+
+  if (atts.length) {
+    html += '<p class="section-title">첨부 파일 ' + atts.length + '개</p><div class="att-grid">';
+    atts.forEach(function (a) {
+      if (isImage(a)) {
+        html += '<div class="att-tile"><button type="button" data-photo="' + esc(a.id) + '" style="display:block;width:100%;border:0;padding:0;background:none">' +
+          '<img src="' + attURL(a) + '" alt="' + esc(a.name) + '"></button>' +
+          '<div class="cap">' + esc(a.name) + '</div></div>';
+      } else {
+        html += '<div class="att-tile"><a href="' + attURL(a) + '" target="_blank" rel="noopener" download="' + esc(a.name) + '" style="display:block;text-decoration:none">' +
+          '<div class="pdf-tile"><span style="font-size:22px">📄</span><span>PDF 열기</span></div></a>' +
+          '<div class="cap">' + esc(a.name) + ' · ' + fmtSize(a.size) + '</div></div>';
+      }
+    });
+    html += '</div>';
+    html += '<p class="file-note">사진을 누르면 크게 볼 수 있습니다. PDF는 누르면 열리고, 내려받기도 됩니다.</p>';
+  } else {
+    html += '<p class="file-note" style="margin-top:6px">첨부 파일 없음 — 수정에서 영수증 사진이나 PDF를 붙일 수 있습니다.</p>';
+  }
+  $('#detailBody').innerHTML = html;
+  $('#detailTitle').textContent = '내역 상세';
+  $('#detailModal').hidden = false;
+
+  $$('#detailBody [data-photo]').forEach(function (b) {
+    b.onclick = function () { openPhoto(b.getAttribute('data-photo')); };
+  });
+}
+function openPhoto(attId) {
+  var a = S.atts.filter(function (x) { return x.id === attId; })[0];
+  if (!a) return;
+  $('#photoBig').src = attURL(a);
+  $('#photoModal').hidden = false;
+}
+function deleteEntry(id) {
+  var e = findEntry(id);
+  if (!e) return;
+  askConfirm('이 내역을 지울까요?<br><span style="font-size:16px;color:#5b6b7b">' + esc(e.desc || e.category) + ' · ' + fmtWon(e.amount) + '</span>', '지우기', true).then(function (ok) {
+    if (!ok) return;
+    var atts = attsOf(id);
+    var jobs = [dbDel('entries', id)];
+    atts.forEach(function (a) { jobs.push(dbDel('attachments', a.id)); });
+    $('#detailModal').hidden = true;
+    Promise.all(jobs).then(loadData).then(function () {
+      renderAll();
+      S.lastDeleted = { entry: e, atts: atts };
+      showUndo('내역을 지웠습니다', function () {
+        var putJobs = [dbPut('entries', e)];
+        S.lastDeleted.atts.forEach(function (a) { putJobs.push(dbPut('attachments', a)); });
+        Promise.all(putJobs).then(loadData).then(function () { renderAll(); toast('되살렸습니다'); });
+      });
+    });
+  });
+}
+
+/* ── 계산기 ─────────────────────────────────────────── */
+var C = { disp: '0', acc: null, op: null, fresh: true, prev: '', tokens: [] };
+function groupNum(str) {
+  str = String(str);
+  var neg = str.charAt(0) === '-';
+  if (neg) str = str.slice(1);
+  var parts = str.split('.');
+  parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  return (neg ? '-' : '') + parts.join('.');
+}
+function calcRender() {
+  $('#calcExpr').textContent = groupNum(C.disp);
+  $('#calcPrev').innerHTML = C.prev || '&nbsp;';
+}
+function calcReset() { C = { disp: '0', acc: null, op: null, fresh: true, prev: '', tokens: [] }; calcRender(); }
+function calcDigit(d) {
+  if (C.disp === '오류') calcReset();
+  if (d === '.') {
+    if (C.fresh) { C.disp = '0.'; C.fresh = false; }
+    else if (C.disp.indexOf('.') < 0) C.disp += '.';
+  } else {
+    if (C.fresh) { C.disp = (d === '00' ? '0' : d); C.fresh = false; }
+    else if (C.disp === '0') C.disp = (d === '00' ? '0' : d);
+    else if (C.disp.replace(/[-.]/g, '').length < 12) C.disp += d;
+  }
+  calcRender();
+}
+function calcApplyOp(a, b, op) {
+  var x = Number(a), y = Number(b);
+  var v;
+  if (op === '+') v = x + y;
+  else if (op === '−') v = x - y;
+  else if (op === '×') v = x * y;
+  else if (op === '÷') {
+    if (y === 0) return '오류';
+    v = x / y;
+  } else v = y;
+  v = Math.round(v * 1e10) / 1e10;
+  return String(v);
+}
+function calcOp(op) {
+  if (C.disp === '오류') return;
+  if (C.op && C.fresh) {
+    C.tokens[C.tokens.length - 1] = op;
+    C.op = op;
+    C.prev = C.tokens.join(' ');
+    calcRender();
+    return;
+  }
+  var operand = C.disp;
+  if (C.op) {
+    C.disp = calcApplyOp(C.acc, operand, C.op);
+    C.acc = C.disp;
+    C.tokens.push(groupNum(operand));
+  } else {
+    C.acc = String(parseFloat(operand));
+    C.tokens.push(groupNum(operand));
+  }
+  C.tokens.push(op);
+  C.op = op;
+  C.fresh = true;
+  C.prev = C.tokens.join(' ');
+  calcRender();
+}
+function calcEquals() {
+  if (C.disp === '오류') return;
+  if (C.op) {
+    var a = C.acc, b = C.disp;
+    var v = calcApplyOp(a, b, C.op);
+    C.prev = C.tokens.join(' ') + ' ' + groupNum(b) + ' =';
+    C.disp = v;
+    C.acc = null; C.op = null; C.fresh = true; C.tokens = [];
+  } else {
+    C.prev = groupNum(C.disp) + ' =';
+    C.fresh = true;
+  }
+  calcRender();
+}
+function calcPercent() {
+  if (C.disp === '오류') return;
+  C.disp = String(Math.round((Number(C.disp) / 100) * 1e10) / 1e10);
+  C.fresh = true;
+  calcRender();
+}
+function calcBack() {
+  if (C.fresh) { /* nothing */ }
+  if (C.disp === '오류') { calcReset(); return; }
+  C.disp = C.disp.length > 1 ? C.disp.slice(0, -1) : '0';
+  if (C.disp === '-') C.disp = '0';
+  calcRender();
+}
+function calcKey(k) {
+  if (k === 'C') return calcReset();
+  if (k === 'BACK') return calcBack();
+  if (k === '%') return calcPercent();
+  if (k === '=') return calcEquals();
+  if (['+', '−', '×', '÷'].indexOf(k) >= 0) return calcOp(k);
+  return calcDigit(k);
+}
+function openCalc() {
+  calcReset();
+  $('#calcModal').hidden = false;
+}
+function applyCalc() {
+  if (C.disp === '오류') { toast('계산 결과가 올바르지 않습니다'); return; }
+  var val = Math.round(Number(C.disp));
+  if (!val) { toast('0이 아닌 금액을 계산해 주세요'); return; }
+  if ($('#formModal').hidden) openForm();
+  setAmount(val);
+  $('#calcModal').hidden = true;
+  toast(fmtWon(val) + ' 을 금액에 넣었습니다');
+  setTimeout(function () { $('#f_amount').focus(); }, 100);
+}
+
+/* ═══════════════════════════════════════════════════════
+   인쇄 (미리보기 · 전체/필터 · 선택)
+   ═══════════════════════════════════════════════════════ */
+function printRangeText(list) {
+  if (!list.length) return '-';
+  var dates = list.map(function (e) { return e.date; }).sort();
+  var a = dates[0], b = dates[dates.length - 1];
+  if (a === b) return fmtDateDot(a);
+  return fmtDateDot(a) + ' ~ ' + fmtDateDot(b);
+}
+function printRows(list, withMemo) {
+  return list.map(function (e, i) {
+    var atts = attsOf(e.id);
+    var imgs = atts.filter(isImage).length, pdfs = atts.filter(isPdf).length;
+    var attTxt = [];
+    if (imgs) attTxt.push('사진 ' + imgs);
+    if (pdfs) attTxt.push('PDF ' + pdfs);
+    var content = '<b>' + esc(e.desc || e.category || '(내용 없음)') + '</b>';
+    if (e.party) content += '<br><span style="font-size:8pt;color:#333">' + esc(e.party) + '</span>';
+    if (withMemo && e.memo) content += '<br><span style="font-size:7.6pt;color:#555">메모: ' + esc(e.memo) + '</span>';
+    return '<tr>' +
+      '<td class="c">' + (i + 1) + '</td>' +
+      '<td class="c">' + fmtDateDot(e.date) + '</td>' +
+      '<td class="c">' + (e.type === 'in' ? '입금' : '출금') + '</td>' +
+      '<td class="c">' + esc(e.category) + '</td>' +
+      '<td>' + content + '</td>' +
+      '<td class="c">' + esc(e.method || '-') + '</td>' +
+      '<td class="r in">' + (e.type === 'in' ? fmtNum(e.amount) : '') + '</td>' +
+      '<td class="r out">' + (e.type === 'out' ? fmtNum(e.amount) : '') + '</td>' +
+      '<td class="c">' + (attTxt.length ? attTxt.join('<br>') : '-') + '</td>' +
+      '</tr>';
+  }).join('');
+}
+function buildPrintHTML(list, opts) {
+  opts = opts || {};
+  var withMemo = opts.memo !== false;
+  var withPhotos = !!opts.photos;
+  var sorted = list.slice().sort(function (a, b) {
+    if (a.date !== b.date) return a.date < b.date ? -1 : 1;
+    return (a.createdAt || 0) - (b.createdAt || 0);
+  });
+  var sumIn = 0, sumOut = 0;
+  sorted.forEach(function (e) { if (e.type === 'in') sumIn += e.amount; else sumOut += e.amount; });
+  var now = new Date();
+
+  var h = '';
+  h += '<div class="doc-title">용우입출금관리대장</div>';
+  h += '<div class="doc-name">입 출 금 관 리 대 장</div>';
+  h += '<div class="doc-meta"><div>기간 : ' + esc(printRangeText(sorted)) + '</div>' +
+    '<div>출력 : ' + fmtDateTime(now) + ' · ' + sorted.length + '건</div></div>';
+
+  h += '<table><colgroup>' +
+    '<col style="width:5%"><col style="width:10%"><col style="width:6%"><col style="width:11%">' +
+    '<col style="width:25%"><col style="width:8%"><col style="width:12%"><col style="width:12%"><col style="width:9%">' +
+    '</colgroup><thead><tr>' +
+    '<th>연번</th><th>날짜</th><th>구분</th><th>분류</th><th>거래처 · 내용</th>' +
+    '<th>결제수단</th><th>입금(원)</th><th>출금(원)</th><th>첨부</th></tr></thead><tbody>';
+  h += printRows(sorted, withMemo);
+  h += '</tbody><tfoot><tr class="total"><td colspan="6">합 계 (' + sorted.length + '건)</td>' +
+    '<td class="r">' + fmtNum(sumIn) + '</td><td class="r">' + fmtNum(sumOut) + '</td><td>-</td></tr></tfoot></table>';
+
+  h += '<div class="doc-sum">' +
+    '<span class="s">총 입금 <b>' + fmtWon(sumIn) + '</b></span>' +
+    '<span class="s">총 출금 <b>' + fmtWon(sumOut) + '</b></span>' +
+    '<span class="s">잔액 <b>' + fmtWon(sumIn - sumOut) + '</b></span>' +
+    '</div>';
+  h += '<p class="doc-note">※ 위 금액은 용우입출금관리대장 앱에 기록된 내역을 출력한 것입니다. 첨부 표시는 해당 내역에 붙은 사진·PDF 개수입니다.</p>';
+
+  if (withPhotos) {
+    var photos = [];
+    sorted.forEach(function (e) {
+      attsOf(e.id).forEach(function (a) {
+        if (isImage(a)) photos.push({ a: a, e: e });
+      });
+    });
+    if (photos.length) {
+      h += '<div class="photos"><h3>첨부 사진 (' + photos.length + '장)</h3><div class="photo-grid">';
+      photos.forEach(function (p) {
+        h += '<div class="photo"><img src="' + attURL(p.a) + '" alt="">' +
+          '<div class="pc">' + fmtDateDot(p.e.date) + ' · ' + esc(p.e.desc || p.e.category) + ' · ' + fmtWon(p.e.amount) + '</div></div>';
+      });
+      h += '</div></div>';
+    }
+  }
+  h += '<div class="foot">용우입출금관리대장 · 이 기기에 저장된 기록 · ' + fmtDateTime(now) + '</div>';
+  return '<div class="print-doc">' + h + '</div>';
+}
+
+function renderPrintPreview() {
+  var list = S.printList || visibleEntries();
+  var opts = { memo: $('#optMemo').checked, photos: $('#optPhotos').checked };
+  var html = buildPrintHTML(list, opts);
+  $('#previewPaper').innerHTML = html;
+  $('#printRoot').innerHTML = html;
+  fitPreview();
+}
+function fitPreview() {
+  var wrap = $('#previewWrap');
+  var paper = $('#previewPaper');
+  if (!wrap || !paper) return;
+  var avail = wrap.clientWidth - 24;
+  var w = paper.offsetWidth || 794;
+  var scale = Math.min(1, Math.max(0.25, avail / w));
+  paper.style.zoom = String(scale);
+}
+function openPrintPreview(list) {
+  var target = list || visibleEntries();
+  if (!target.length) { toast('인쇄할 내역이 없습니다'); return; }
+  S.printList = target;
+  $('#optPhotos').checked = false;
+  $('#optMemo').checked = true;
+  $('#detailModal').hidden = true;
+  $('#printPreviewModal').hidden = false;
+  renderPrintPreview();
+  setTimeout(fitPreview, 60);
+}
+function doPrint() {
+  if (!S.printList || !S.printList.length) { toast('인쇄할 내역이 없습니다'); return; }
+  window.print();
+}
+
+/* ═══════════════════════════════════════════════════════
+   내보내기 — 엑셀(.xlsx, ZIP Store 직접 생성) · CSV · JSON 백업
+   ═══════════════════════════════════════════════════════ */
+function sortAsc(list) {
+  return list.slice().sort(function (a, b) {
+    if (a.date !== b.date) return a.date < b.date ? -1 : 1;
+    return (a.createdAt || 0) - (b.createdAt || 0);
+  });
+}
+function currentExportList() {
+  var el = document.querySelector('input[name="scope"]:checked');
+  var scope = el ? el.value : 'current';
+  return sortAsc(scope === 'all' ? S.entries : visibleEntries());
+}
+function downloadBlob(blob, name) {
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url; a.download = name; a.rel = 'noopener';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(function () { URL.revokeObjectURL(url); a.remove(); }, 2000);
+}
+function fileStamp() { return todayISO(); }
+
+/* ── ZIP(무압축) 작성 ─────────────────────────────────── */
+var CRC_TABLE = (function () {
+  var t = new Uint32Array(256);
+  for (var n = 0; n < 256; n++) {
+    var c = n;
+    for (var k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+    t[n] = c >>> 0;
+  }
+  return t;
+})();
+function crc32(u8) {
+  var c = 0xFFFFFFFF;
+  for (var i = 0; i < u8.length; i++) c = CRC_TABLE[(c ^ u8[i]) & 0xFF] ^ (c >>> 8);
+  return (c ^ 0xFFFFFFFF) >>> 0;
+}
+function dosDateTime(d) {
+  var time = ((d.getHours() & 31) << 11) | ((d.getMinutes() & 63) << 5) | ((d.getSeconds() / 2) & 31);
+  var date = (((d.getFullYear() - 1980) & 127) << 9) | (((d.getMonth() + 1) & 15) << 5) | (d.getDate() & 31);
+  return { time: time, date: date };
+}
+function zipStore(files) {
+  var enc = new TextEncoder();
+  var now = dosDateTime(new Date());
+  var locals = [], centrals = [], offset = 0;
+  files.forEach(function (f) {
+    var nameB = enc.encode(f.name);
+    var data = (f.data instanceof Uint8Array) ? f.data : enc.encode(f.data);
+    var crc = crc32(data);
+    var lh = new Uint8Array(30 + nameB.length);
+    var lv = new DataView(lh.buffer);
+    lv.setUint32(0, 0x04034b50, true);
+    lv.setUint16(4, 20, true);
+    lv.setUint16(6, 0x0800, true);
+    lv.setUint16(8, 0, true);
+    lv.setUint16(10, now.time, true);
+    lv.setUint16(12, now.date, true);
+    lv.setUint32(14, crc, true);
+    lv.setUint32(18, data.length, true);
+    lv.setUint32(22, data.length, true);
+    lv.setUint16(26, nameB.length, true);
+    lv.setUint16(28, 0, true);
+    lh.set(nameB, 30);
+    locals.push(lh, data);
+    var cd = new Uint8Array(46 + nameB.length);
+    var cv = new DataView(cd.buffer);
+    cv.setUint32(0, 0x02014b50, true);
+    cv.setUint16(4, 20, true);
+    cv.setUint16(6, 20, true);
+    cv.setUint16(8, 0x0800, true);
+    cv.setUint16(10, 0, true);
+    cv.setUint16(12, now.time, true);
+    cv.setUint16(14, now.date, true);
+    cv.setUint32(16, crc, true);
+    cv.setUint32(20, data.length, true);
+    cv.setUint32(24, data.length, true);
+    cv.setUint16(28, nameB.length, true);
+    cv.setUint16(30, 0, true);
+    cv.setUint16(32, 0, true);
+    cv.setUint16(34, 0, true);
+    cv.setUint16(36, 0, true);
+    cv.setUint32(38, 0, true);
+    cv.setUint32(42, offset, true);
+    cd.set(nameB, 46);
+    centrals.push(cd);
+    offset += lh.length + data.length;
+  });
+  var cdSize = centrals.reduce(function (n, c) { return n + c.length; }, 0);
+  var eocd = new Uint8Array(22);
+  var ev = new DataView(eocd.buffer);
+  ev.setUint32(0, 0x06054b50, true);
+  ev.setUint16(4, 0, true);
+  ev.setUint16(6, 0, true);
+  ev.setUint16(8, files.length, true);
+  ev.setUint16(10, files.length, true);
+  ev.setUint32(12, cdSize, true);
+  ev.setUint32(16, offset, true);
+  ev.setUint16(20, 0, true);
+  var total = offset + cdSize + 22;
+  var out = new Uint8Array(total);
+  var p = 0;
+  locals.forEach(function (chunk) { out.set(chunk, p); p += chunk.length; });
+  centrals.forEach(function (c) { out.set(c, p); p += c.length; });
+  out.set(eocd, p);
+  return out;
+}
+
+/* ── XLSX ─────────────────────────────────────────────── */
+function xmlEsc(s) {
+  return String(s == null ? '' : s)
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&apos;');
+}
+function colLetter(n) {
+  var s = '';
+  while (n > 0) { var m = (n - 1) % 26; s = String.fromCharCode(65 + m) + s; n = Math.floor((n - 1) / 26); }
+  return s;
+}
+function xc(ref, val, style, isNum) {
+  if (val === null || val === undefined || val === '') return '';
+  var s = style ? ' s="' + style + '"' : '';
+  if (isNum) return '<c r="' + ref + '"' + s + '><v>' + val + '</v></c>';
+  return '<c r="' + ref + '"' + s + ' t="inlineStr"><is><t xml:space="preserve">' + xmlEsc(val) + '</t></is></c>';
+}
+function excelSerial(iso) {
+  var d = parseISO(iso);
+  return Math.round(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86400000) + 25569;
+}
+function buildSheetXML(list) {
+  var sumIn = 0, sumOut = 0;
+  list.forEach(function (e) { if (e.type === 'in') sumIn += e.amount; else sumOut += e.amount; });
+  var bal = sumIn - sumOut;
+  var range = printRangeText(list);
+  var rows = [];
+  var r = 0;
+  function addRow(cells, height) {
+    r++;
+    var inner = cells.filter(Boolean).join('');
+    rows.push('<row r="' + r + '"' + (height ? ' ht="' + height + '" customHeight="1"' : '') + '>' + inner + '</row>');
+    return r;
+  }
+  addRow([xc('A1', APP_NAME, 1)], 30);
+  addRow([xc('A2', '기간', 8), xc('B2', range, 8), xc('G2', '출력일시', 8), xc('H2', fmtDateTime(new Date()), 8)]);
+  addRow([xc('A3', '합계', 8), xc('B3', '입금 ' + fmtWon(sumIn), 8), xc('D3', '출금 ' + fmtWon(sumOut), 8), xc('F3', '잔액 ' + fmtWon(bal), 8), xc('I3', list.length + '건', 8)]);
+  addRow([], 8);
+  addRow([
+    xc('A5', '연번', 2), xc('B5', '날짜', 2), xc('C5', '구분', 2), xc('D5', '분류', 2),
+    xc('E5', '거래처 · 내용', 2), xc('F5', '결제수단', 2), xc('G5', '입금(원)', 2),
+    xc('H5', '출금(원)', 2), xc('I5', '메모', 2), xc('J5', '첨부파일', 2)
+  ], 26);
+  var first = 6, last = 5;
+  list.forEach(function (e, i) {
+    var atts = attsOf(e.id).map(function (a) { return a.name; }).join(' / ');
+    var content = e.desc || e.category || '';
+    if (e.party) content = e.party + ' · ' + content;
+    var rowNo = addRow([
+      xc('A' + (r + 1), i + 1, 9, true),
+      xc('B' + (r + 1), excelSerial(e.date), 5, true),
+      xc('C' + (r + 1), e.type === 'in' ? '입금' : '출금', 9),
+      xc('D' + (r + 1), e.category, 9),
+      xc('E' + (r + 1), content, 3),
+      xc('F' + (r + 1), e.method || '-', 9),
+      xc('G' + (r + 1), e.type === 'in' ? e.amount : '', 4, true),
+      xc('H' + (r + 1), e.type === 'out' ? e.amount : '', 4, true),
+      xc('I' + (r + 1), e.memo, 3),
+      xc('J' + (r + 1), atts, 3)
+    ]);
+    last = rowNo;
+  });
+  if (last < first) last = first;
+  r++;
+  var totalRow = addRow([
+    xc('A' + (r + 1), '합 계', 6),
+    xc('G' + (r + 1), sumIn, 7, true),
+    xc('H' + (r + 1), sumOut, 7, true),
+    xc('J' + (r + 1), '첨부 ' + S.atts.filter(function (a) { return list.some(function (e) { return e.id === a.entryId; }); }).length + '개', 6)
+  ], 22);
+  r++;
+  var balRow = addRow([
+    xc('A' + (r + 1), '잔액 (입금 − 출금)', 6),
+    xc('G' + (r + 1), bal, 7, true)
+  ], 22);
+
+  var merges = ['A1:J1', 'B2:F2', 'H2:J2', 'I3:J3', 'A' + totalRow + ':F' + totalRow, 'A' + balRow + ':F' + balRow];
+  var mergeXml = merges.map(function (m) { return '<mergeCell ref="' + m + '"/>'; }).join('');
+
+  var cols = '<cols>' +
+    '<col min="1" max="1" width="5.5" customWidth="1"/>' +
+    '<col min="2" max="2" width="12" customWidth="1"/>' +
+    '<col min="3" max="3" width="7" customWidth="1"/>' +
+    '<col min="4" max="4" width="13" customWidth="1"/>' +
+    '<col min="5" max="5" width="30" customWidth="1"/>' +
+    '<col min="6" max="6" width="10" customWidth="1"/>' +
+    '<col min="7" max="7" width="13" customWidth="1"/>' +
+    '<col min="8" max="8" width="13" customWidth="1"/>' +
+    '<col min="9" max="9" width="26" customWidth="1"/>' +
+    '<col min="10" max="10" width="26" customWidth="1"/>' +
+    '</cols>';
+
+  return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
+    '<sheetPr><pageSetUpPr fitToPage="1"/></sheetPr>' +
+    '<dimension ref="A1:J' + r + '"/>' +
+    '<sheetViews><sheetView showGridLines="0" workbookViewId="0"><pane ySplit="5" topLeftCell="A6" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>' +
+    '<sheetFormatPr defaultRowHeight="19"/>' + cols +
+    '<sheetData>' + rows.join('') + '</sheetData>' +
+    '<autoFilter ref="A5:J' + last + '"/>' +
+    '<mergeCells count="' + merges.length + '">' + mergeXml + '</mergeCells>' +
+    '<printOptions horizontalCentered="1"/>' +
+    '<pageMargins left="0.4" right="0.4" top="0.5" bottom="0.5" header="0.3" footer="0.3"/>' +
+    '<pageSetup paperSize="9" scale="85" fitToWidth="1" fitToHeight="0" orientation="landscape"/>' +
+    '</worksheet>';
+}
+function buildStylesXML() {
+  return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
+    '<numFmts count="2"><numFmt numFmtId="164" formatCode="yyyy-mm-dd"/><numFmt numFmtId="165" formatCode="#,##0"/></numFmts>' +
+    '<fonts count="4">' +
+    '<font><sz val="10"/><name val="맑은 고딕"/><family val="2"/></font>' +
+    '<font><b/><sz val="16"/><color rgb="FF0B3F66"/><name val="맑은 고딕"/><family val="2"/></font>' +
+    '<font><b/><sz val="10"/><color rgb="FFFFFFFF"/><name val="맑은 고딕"/><family val="2"/></font>' +
+    '<font><b/><sz val="10"/><color rgb="FF0B3F66"/><name val="맑은 고딕"/><family val="2"/></font>' +
+    '</fonts>' +
+    '<fills count="4">' +
+    '<fill><patternFill patternType="none"/></fill>' +
+    '<fill><patternFill patternType="gray125"/></fill>' +
+    '<fill><patternFill patternType="solid"><fgColor rgb="FF12558A"/><bgColor indexed="64"/></patternFill></fill>' +
+    '<fill><patternFill patternType="solid"><fgColor rgb="FFEAF0F6"/><bgColor indexed="64"/></patternFill></fill>' +
+    '</fills>' +
+    '<borders count="3">' +
+    '<border><left/><right/><top/><bottom/><diagonal/></border>' +
+    '<border><left style="thin"><color rgb="FFAFC0D0"/></left><right style="thin"><color rgb="FFAFC0D0"/></right><top style="thin"><color rgb="FFAFC0D0"/></top><bottom style="thin"><color rgb="FFAFC0D0"/></bottom><diagonal/></border>' +
+    '<border><left style="thin"><color rgb="FFAFC0D0"/></left><right style="thin"><color rgb="FFAFC0D0"/></right><top style="medium"><color rgb="FF12558A"/></top><bottom style="double"><color rgb="FF12558A"/></bottom><diagonal/></border>' +
+    '</borders>' +
+    '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>' +
+    '<cellXfs count="10">' +
+    '<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>' +
+    '<xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>' +
+    '<xf numFmtId="0" fontId="2" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>' +
+    '<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center" wrapText="1"/></xf>' +
+    '<xf numFmtId="165" fontId="0" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>' +
+    '<xf numFmtId="164" fontId="0" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>' +
+    '<xf numFmtId="0" fontId="3" fillId="3" borderId="2" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>' +
+    '<xf numFmtId="165" fontId="3" fillId="3" borderId="2" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>' +
+    '<xf numFmtId="0" fontId="3" fillId="0" borderId="0" xfId="0" applyFont="1"/>' +
+    '<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>' +
+    '</cellXfs>' +
+    '<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>' +
+    '<dxfs count="0"/><tableStyles count="0" defaultTableStyle="TableStyleMedium2" defaultPivotStyle="PivotStyleLight16"/>' +
+    '</styleSheet>';
+}
+function buildXlsxBytes(list) {
+  var ct = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
+    '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
+    '<Default Extension="xml" ContentType="application/xml"/>' +
+    '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>' +
+    '<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>' +
+    '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>' +
+    '</Types>';
+  var rels = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+    '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>' +
+    '</Relationships>';
+  var wb = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">' +
+    '<sheets><sheet name="입출금내역" sheetId="1" r:id="rId1"/></sheets>' +
+    '<calcPr calcId="191029" fullCalcOnLoad="1"/></workbook>';
+  var wbRels = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+    '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>' +
+    '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>' +
+    '</Relationships>';
+  return zipStore([
+    { name: '[Content_Types].xml', data: ct },
+    { name: '_rels/.rels', data: rels },
+    { name: 'xl/workbook.xml', data: wb },
+    { name: 'xl/_rels/workbook.xml.rels', data: wbRels },
+    { name: 'xl/styles.xml', data: buildStylesXML() },
+    { name: 'xl/worksheets/sheet1.xml', data: buildSheetXML(list) }
+  ]);
+}
+function exportXlsx() {
+  var list = currentExportList();
+  if (!list.length) { toast('내보낼 내역이 없습니다'); return; }
+  try {
+    var bytes = buildXlsxBytes(list);
+    var blob = new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    downloadBlob(blob, APP_NAME + '_' + fileStamp() + '.xlsx');
+    toast(list.length + '건을 엑셀 파일로 저장했습니다');
+  } catch (err) {
+    console.error(err);
+    toast('엑셀 파일을 만들지 못했습니다: ' + err.message);
+  }
+}
+
+/* ── CSV (구글 시트용, UTF-8 BOM) ─────────────────────── */
+function csvCell(v) {
+  var s = (v === null || v === undefined) ? '' : String(v);
+  return '"' + s.replace(/"/g, '""') + '"';
+}
+function buildCSV(list) {
+  var lines = [];
+  lines.push(['날짜', '구분', '분류', '거래처', '내용', '금액(원)', '결제수단', '메모', '첨부파일'].map(csvCell).join(','));
+  var sumIn = 0, sumOut = 0;
+  list.forEach(function (e) {
+    if (e.type === 'in') sumIn += e.amount; else sumOut += e.amount;
+    var atts = attsOf(e.id).map(function (a) { return a.name; }).join(' / ');
+    lines.push([
+      e.date, e.type === 'in' ? '입금' : '출금', e.category, e.party, e.desc,
+      e.amount, e.method, e.memo, atts
+    ].map(function (v, i) { return i === 5 ? String(v) : csvCell(v); }).join(','));
+  });
+  lines.push('');
+  lines.push(csvCell('총 입금') + ',' + sumIn);
+  lines.push(csvCell('총 출금') + ',' + sumOut);
+  lines.push(csvCell('잔액') + ',' + (sumIn - sumOut));
+  lines.push(csvCell('건수') + ',' + list.length);
+  return '\uFEFF' + lines.join('\r\n') + '\r\n';
+}
+function exportCSV() {
+  var list = currentExportList();
+  if (!list.length) { toast('내보낼 내역이 없습니다'); return; }
+  var blob = new Blob([buildCSV(list)], { type: 'text/csv;charset=utf-8' });
+  downloadBlob(blob, APP_NAME + '_구글시트용_' + fileStamp() + '.csv');
+  toast(list.length + '건을 구글 시트용 CSV로 저장했습니다');
+}
+
+/* ── JSON 백업 / 복원 ─────────────────────────────────── */
+function blobToBase64(blob) {
+  return new Promise(function (resolve, reject) {
+    var fr = new FileReader();
+    fr.onload = function () {
+      var s = String(fr.result || '');
+      resolve(s.indexOf(',') >= 0 ? s.slice(s.indexOf(',') + 1) : '');
+    };
+    fr.onerror = function () { reject(fr.error); };
+    fr.readAsDataURL(blob);
+  });
+}
+function b64ToBlob(b64, type) {
+  var bin = atob(b64 || '');
+  var u8 = new Uint8Array(bin.length);
+  for (var i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+  return new Blob([u8], { type: type || 'application/octet-stream' });
+}
+function exportJson(withFiles) {
+  var entries = sortAsc(S.entries);
+  if (!entries.length) { toast('백업할 내역이 없습니다'); return; }
+  toast('백업 파일을 만드는 중입니다…');
+  var ids = new Set(entries.map(function (e) { return e.id; }));
+  var atts = withFiles ? S.atts.filter(function (a) { return ids.has(a.entryId); }) : [];
+  var jobs = atts.map(function (a) {
+    return blobToBase64(a.blob).then(function (data) {
+      return { id: a.id, entryId: a.entryId, name: a.name, type: a.type, size: a.size, createdAt: a.createdAt, data: data };
+    });
+  });
+  Promise.all(jobs).then(function (attObjs) {
+    var pack = {
+      app: APP_NAME,
+      format: 'yongwoo-cashbook-backup',
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      entryCount: entries.length,
+      attachmentCount: attObjs.length,
+      entries: entries,
+      attachments: attObjs
+    };
+    var name = APP_NAME + (withFiles ? '_전체백업_' : '_내역백업_') + fileStamp() + '.json';
+    downloadBlob(new Blob([JSON.stringify(pack, null, 1)], { type: 'application/json' }), name);
+    toast(entries.length + '건' + (withFiles ? ' + 첨부 ' + attObjs.length + '개' : '') + '를 저장했습니다');
+  }).catch(function (err) {
+    console.error(err);
+    toast('백업 파일을 만들지 못했습니다: ' + err.message);
+  });
+}
+function handleRestoreFile(file) {
+  if (!file) return;
+  var fr = new FileReader();
+  fr.onload = function () {
+    var pack;
+    try { pack = JSON.parse(String(fr.result || '')); }
+    catch (e) { toast('백업 파일을 읽을 수 없습니다'); return; }
+    if (!pack || !Array.isArray(pack.entries)) { toast('용우입출금관리대장 백업 파일이 아닙니다'); return; }
+    var entries = pack.entries.filter(function (e) { return e && typeof e.id === 'string'; });
+    var atts = Array.isArray(pack.attachments) ? pack.attachments : [];
+    var when = pack.exportedAt ? fmtDateTime(new Date(pack.exportedAt)) : '날짜 없음';
+    askChoice(
+      '<b>' + entries.length + '건 / 첨부 ' + atts.length + '개</b>가 들어 있는 백업입니다.<br>' +
+      '<span style="font-size:16px;color:#5b6b7b">만든 날짜: ' + esc(when) + '</span><br><br>' +
+      '지금 기록에 <b>합칠지</b>, 아니면 지금 기록을 지우고 백업으로 <b>덮어쓸지</b> 골라 주세요.',
+      [
+        { value: 'merge', label: '합치기', cls: 'primary' },
+        { value: 'replace', label: '덮어쓰기', cls: 'danger' },
+        { value: 'cancel', label: '취소', cls: 'ghost' }
+      ], '백업 불러오기'
+    ).then(function (choice) {
+      if (!choice || choice === 'cancel') return;
+      var jobs = [];
+      if (choice === 'replace') {
+        jobs.push(dbClear('entries'), dbClear('attachments'));
+      }
+      jobs.push(dbPutMany('entries', entries));
+      var now = Date.now();
+      jobs.push(dbPutMany('attachments', atts.map(function (a) {
+        return {
+          id: a.id, entryId: a.entryId, name: a.name || '첨부', type: a.type || '',
+          size: a.size || 0, createdAt: a.createdAt || now, blob: b64ToBlob(a.data, a.type)
+        };
+      })));
+      Promise.all(jobs).then(loadData).then(function () {
+        renderAll();
+        toast('백업을 불러왔습니다 (' + entries.length + '건)');
+      }).catch(function (err) {
+        console.error(err);
+        toast('복원하지 못했습니다: ' + err.message);
+      });
+    });
+  };
+  fr.readAsText(file, 'utf-8');
+}
+
+/* ═══════════════════════════════════════════════════════
+   연습용 샘플 · 설정 · 화면 연결 · 시작
+   ═══════════════════════════════════════════════════════ */
+function makeReceiptImage(lines) {
+  return new Promise(function (resolve) {
+    var c = document.createElement('canvas');
+    c.width = 620; c.height = 820;
+    var g = c.getContext('2d');
+    g.fillStyle = '#ffffff'; g.fillRect(0, 0, c.width, c.height);
+    g.strokeStyle = '#cfd8e2'; g.lineWidth = 6; g.strokeRect(12, 12, c.width - 24, c.height - 24);
+    g.textAlign = 'center';
+    g.fillStyle = '#0b3f66';
+    g.font = 'bold 46px "Noto Sans CJK KR", "Malgun Gothic", sans-serif';
+    g.fillText('영 수 증', c.width / 2, 118);
+    g.fillStyle = '#6b7c8c';
+    g.font = '24px "Noto Sans CJK KR", "Malgun Gothic", sans-serif';
+    g.fillText('용우입출금관리대장 · 연습용', c.width / 2, 162);
+    g.strokeStyle = '#9fb0c0'; g.setLineDash([12, 9]);
+    g.beginPath(); g.moveTo(56, 205); g.lineTo(c.width - 56, 205); g.stroke();
+    g.setLineDash([]);
+    g.textAlign = 'left'; g.fillStyle = '#1d2b38';
+    g.font = '30px "Noto Sans CJK KR", "Malgun Gothic", sans-serif';
+    lines.forEach(function (ln, i) { g.fillText(ln, 66, 280 + i * 62); });
+    g.strokeStyle = '#9fb0c0'; g.setLineDash([12, 9]);
+    g.beginPath(); g.moveTo(56, 700); g.lineTo(c.width - 56, 700); g.stroke();
+    g.setLineDash([]);
+    g.fillStyle = '#6b7c8c';
+    g.font = '22px "Noto Sans CJK KR", "Malgun Gothic", sans-serif';
+    g.fillText('연습용으로 만든 영수증 사진입니다.', 66, 752);
+    c.toBlob(function (b) { resolve(b); }, 'image/png');
+  });
+}
+function makeSamplePdf() {
+  var lines = [
+    'BT /F1 22 Tf 60 760 Td (Yongwoo Cashbook - Practice Attachment) Tj ET',
+    'BT /F1 12 Tf 60 720 Td (This is a practice PDF attached to a sample entry.) Tj ET',
+    'BT /F1 12 Tf 60 700 Td (Real receipts and contracts can be attached the same way.) Tj ET'
+  ];
+  var stream = lines.join('\n');
+  var objs = [
+    '<</Type/Catalog/Pages 2 0 R>>',
+    '<</Type/Pages/Kids[3 0 R]/Count 1>>',
+    '<</Type/Page/Parent 2 0 R/MediaBox[0 0 595 842]/Resources<</Font<</F1 5 0 R>>>>/Contents 4 0 R>>',
+    '<</Length ' + stream.length + '>>\nstream\n' + stream + '\nendstream',
+    '<</Type/Font/Subtype/Type1/BaseFont/Helvetica>>'
+  ];
+  var pdf = '%PDF-1.4\n';
+  var offsets = [];
+  objs.forEach(function (o, i) {
+    offsets.push(pdf.length);
+    pdf += (i + 1) + ' 0 obj\n' + o + '\nendobj\n';
+  });
+  var xref = pdf.length;
+  pdf += 'xref\n0 ' + (objs.length + 1) + '\n0000000000 65535 f \n';
+  offsets.forEach(function (off) {
+    pdf += String(off).padStart(10, '0') + ' 00000 n \n';
+  });
+  pdf += 'trailer\n<</Size ' + (objs.length + 1) + '/Root 1 0 R>>\nstartxref\n' + xref + '\n%%EOF\n';
+  return new Blob([pdf], { type: 'application/pdf' });
+}
+function sampleRows() {
+  var now = new Date();
+  var y = now.getFullYear(), m = now.getMonth();
+  function D(off, day) { return isoOf(new Date(y, m + off, day)); }
+  var t = Date.now();
+  var rows = [
+    { date: D(0, 2), type: 'in', category: '보험수수료', party: '홍길동 고객', desc: '11월 암보험 수수료', amount: 820000, method: '계좌이체', memo: '연습용 메모 · 카드 결재 확인' },
+    { date: D(0, 4), type: 'out', category: '식비', party: '부전동 식당', desc: '고객 접대 점심', amount: 46000, method: '카드', memo: '' },
+    { date: D(0, 6), type: 'in', category: '보험수수료', party: '김철수 고객', desc: '암보험 청약 수수료', amount: 1250000, method: '계좌이체', memo: '10:30 청약' },
+    { date: D(0, 7), type: 'out', category: '교통·주유', party: 'SK주유소', desc: '차량 주유', amount: 78000, method: '카드', memo: '' },
+    { date: D(0, 9), type: 'out', category: '사무·통신', party: '통신사', desc: '사무실 인터넷·전화', amount: 55000, method: '계좌이체', memo: '자동이체' },
+    { date: D(0, 12), type: 'out', category: '농장자재', party: '철마농장', desc: '비료 2포', amount: 120000, method: '현금', memo: '' },
+    { date: D(0, 15), type: 'in', category: '고객지원', party: '본사', desc: '11월 고객지원비', amount: 150000, method: '계좌이체', memo: '' },
+    { date: D(0, 18), type: 'out', category: '기타', party: '문구마트', desc: '사무용품', amount: 24500, method: '카드', memo: '볼펜·서류봉투' },
+    { date: D(0, 21), type: 'in', category: '보험수수료', party: '이영희 고객', desc: '건강보험 리모델링 수수료', amount: 640000, method: '계좌이체', memo: '' },
+    { date: D(-1, 8), type: 'in', category: '보험수수료', party: '박민수 고객', desc: '10월 자동차보험 수수료', amount: 310000, method: '계좌이체', memo: '' },
+    { date: D(-1, 11), type: 'out', category: '교통·주유', party: 'SK주유소', desc: '차량 주유', amount: 92000, method: '카드', memo: '' },
+    { date: D(-1, 16), type: 'out', category: '사무·통신', party: '통신사', desc: '휴대폰 요금', amount: 48000, method: '계좌이체', memo: '' },
+    { date: D(-1, 22), type: 'in', category: '고객지원', party: '본사', desc: '10월 고객지원비', amount: 120000, method: '계좌이체', memo: '' },
+    { date: D(-2, 14), type: 'in', category: '보험수수료', party: '정수진 고객', desc: '9월 보험 수수료', amount: 500000, method: '계좌이체', memo: '' }
+  ];
+  return rows.map(function (r, i) {
+    r.id = uid(); r.sample = true;
+    r.createdAt = t - i * 1000; r.updatedAt = r.createdAt;
+    return r;
+  });
+}
+function addSampleData() {
+  if (S.entries.some(function (e) { return e.sample; })) {
+    toast('연습 데이터가 이미 있습니다. 먼저 “샘플만 지우기”를 눌러 주세요.');
+    return;
+  }
+  var rows = sampleRows();
+  toast('연습 데이터를 넣는 중입니다…');
+  Promise.all([makeReceiptImage(['날짜 : ' + rows[0].date, '내용 : 보험수수료 입금', '금액 : 820,000원', '결제 : 계좌이체']), makeSamplePdf()]).then(function (made) {
+    var jobs = [dbPutMany('entries', rows)];
+    jobs.push(dbPut('attachments', {
+      id: uid(), entryId: rows[0].id, name: '입금확인_연습.png', type: 'image/png',
+      size: made[0].size, blob: made[0], createdAt: Date.now()
+    }));
+    var pdfEntry = rows.filter(function (r) { return r.category === '사무·통신' && r.date === rows[4].date; })[0] || rows[4];
+    jobs.push(dbPut('attachments', {
+      id: uid(), entryId: pdfEntry.id, name: '거래명세서_연습.pdf', type: 'application/pdf',
+      size: made[1].size, blob: made[1], createdAt: Date.now()
+    }));
+    return Promise.all(jobs);
+  }).then(loadData).then(function () {
+    renderAll();
+    toast('연습용 샘플 ' + rows.length + '건을 넣었습니다');
+  }).catch(function (err) {
+    console.error(err);
+    toast('샘플을 넣지 못했습니다: ' + err.message);
+  });
+}
+function clearSampleData() {
+  var samples = S.entries.filter(function (e) { return e.sample; });
+  if (!samples.length) { toast('연습 데이터가 없습니다'); return; }
+  askConfirm('연습용(<b>연습</b> 표시) 기록 ' + samples.length + '건과 그 첨부만 지웁니다.<br>실제 기록은 그대로 남습니다.', '샘플만 지우기', true).then(function (ok) {
+    if (!ok) return;
+    var ids = samples.map(function (e) { return e.id; });
+    var jobs = ids.map(function (id) { return dbDel('entries', id); });
+    S.atts.filter(function (a) { return ids.indexOf(a.entryId) >= 0; }).forEach(function (a) {
+      jobs.push(dbDel('attachments', a.id)); forgetURL(a.id);
+    });
+    Promise.all(jobs).then(loadData).then(function () { renderAll(); toast('연습 데이터를 지웠습니다'); });
+  });
+}
+function clearAllData() {
+  if (!S.entries.length) { toast('지울 기록이 없습니다'); return; }
+  askConfirm('기록 <b>' + S.entries.length + '건</b>과 첨부 <b>' + S.atts.length + '개</b>를 모두 지웁니다.<br><span style="font-size:16px;color:#8f1a13">지우기 전에 ⬇ 내보내기에서 백업을 받아 두세요.</span>', '모두 지우기', true).then(function (ok) {
+    if (!ok) return;
+    var snapE = S.entries.slice(), snapA = S.atts.slice();
+    Promise.all([dbClear('entries'), dbClear('attachments')]).then(loadData).then(function () {
+      renderAll();
+      showUndo('모든 기록을 지웠습니다', function () {
+        Promise.all([dbPutMany('entries', snapE), dbPutMany('attachments', snapA)]).then(loadData).then(function () {
+          renderAll(); toast('되살렸습니다');
+        });
+      });
+    });
+  });
+}
+
+/* ── 설정 화면 ───────────────────────────────────────── */
+function renderSettings() {
+  $('#setEntryCount').textContent = S.entries.length + '건';
+  $('#setAttCount').textContent = S.atts.length + '개';
+  if (navigator.storage && navigator.storage.estimate) {
+    navigator.storage.estimate().then(function (est) {
+      var used = est.usage || 0, quota = est.quota || 0;
+      $('#setUsage').textContent = fmtSize(used) + (quota ? ' / ' + fmtSize(quota) : '');
+    }).catch(function () { $('#setUsage').textContent = '-'; });
+  } else {
+    $('#setUsage').textContent = '-';
+  }
+}
+function openSettings() { renderSettings(); $('#settingsModal').hidden = false; }
+
+/* ── 내보내기 화면 ───────────────────────────────────── */
+function updateScopeNote() {
+  var list = currentExportList();
+  var el = document.querySelector('input[name="scope"]:checked');
+  var label = el && el.value === 'all' ? '전체 기간' : '지금 화면';
+  $('#scopeNote').textContent = label + ' ' + list.length + '건을 내보냅니다.';
+}
+function openExport() { updateScopeNote(); $('#exportModal').hidden = false; }
+
+/* ── 이벤트 연결 ─────────────────────────────────────── */
+function bindEvents() {
+  $('#btnAdd').onclick = function () { openForm(); };
+  $('#btnCalc').onclick = openCalc;
+  $('#btnCalc2').onclick = openCalc;
+  $('#btnCalcFromForm').onclick = openCalc;
+  $('#btnCalcClose').onclick = function () { $('#calcModal').hidden = true; };
+  $('#btnCalcApply').onclick = applyCalc;
+  $('#calcKeys').addEventListener('click', function (ev) {
+    var b = ev.target.closest('button[data-k]');
+    if (b) calcKey(b.getAttribute('data-k'));
+  });
+
+  $('#fTypePick').addEventListener('click', function (ev) {
+    var b = ev.target.closest('button[data-type]');
+    if (b) setFormType(b.getAttribute('data-type'));
+  });
+  $('#fCats').addEventListener('click', function (ev) {
+    var b = ev.target.closest('.cat-chip');
+    if (b) { setFormCat(b.getAttribute('data-cat')); $('#f_categoryCustom').value = ''; }
+  });
+  $('#f_categoryCustom').addEventListener('input', function () {
+    if (this.value.trim()) $$('#fCats .cat-chip').forEach(function (b) { b.classList.remove('on'); });
+    else setFormCat(S.formCat);
+  });
+  $('#fMethods').addEventListener('click', function (ev) {
+    var b = ev.target.closest('button[data-method]');
+    if (b) setFormMethod(b.getAttribute('data-method'));
+  });
+  $('#f_amount').addEventListener('input', function () {
+    var digits = this.value.replace(/[^0-9]/g, '');
+    this.value = digits ? Number(digits).toLocaleString('ko-KR') : '';
+  });
+  $('#btnPickFiles').onclick = function () { $('#f_files').click(); };
+  $('#btnCamera').onclick = function () { $('#f_camera').click(); };
+  $('#f_files').addEventListener('change', function () {
+    if (this.files && this.files.length) addFiles(this.files);
+    this.value = '';
+  });
+  $('#f_camera').addEventListener('change', function () {
+    if (this.files && this.files.length) addFiles(this.files);
+    this.value = '';
+  });
+  $('#formFiles').addEventListener('click', function (ev) {
+    var b = ev.target.closest('[data-del]');
+    if (!b) return;
+    var i = Number(b.getAttribute('data-del'));
+    var p = S.pending[i];
+    if (p) forgetURL(p.id);
+    S.pending.splice(i, 1);
+    renderFormFiles();
+  });
+  $('#btnSave').onclick = saveEntry;
+  $('#btnFormCancel').onclick = closeForm;
+  $('#btnFormClose').onclick = closeForm;
+
+  $('#btnSettings').onclick = openSettings;
+  $('#btnSettingsClose').onclick = function () { $('#settingsModal').hidden = true; };
+  $('#btnSampleAdd').onclick = addSampleData;
+  $('#btnSampleClear').onclick = clearSampleData;
+  $('#btnClearAll').onclick = clearAllData;
+  $('#btnEmptySample').onclick = addSampleData;
+
+  $('#btnExport').onclick = openExport;
+  $('#btnExportClose').onclick = function () { $('#exportModal').hidden = true; };
+  $$('#exportScope input').forEach(function (r) { r.onchange = updateScopeNote; });
+  $('#btnXlsx').onclick = exportXlsx;
+  $('#btnCsv').onclick = exportCSV;
+  $('#btnJsonAll').onclick = function () { exportJson(true); };
+  $('#btnJsonEntries').onclick = function () { exportJson(false); };
+  $('#btnRestorePick').onclick = function () { $('#restoreFile').click(); };
+  $('#restoreFile').addEventListener('change', function () {
+    if (this.files && this.files[0]) handleRestoreFile(this.files[0]);
+    this.value = '';
+  });
+
+  $('#btnPrint').onclick = function () { openPrintPreview(visibleEntries()); };
+  $('#btnSelect').onclick = function () { setSelecting(!S.selecting); };
+  $('#btnSelectCancel').onclick = function () { setSelecting(false); };
+  $('#btnSelectAll').onclick = function () {
+    var vis = visibleEntries();
+    var allOn = vis.length > 0 && vis.every(function (e) { return S.selected.has(e.id); });
+    if (allOn) S.selected.clear();
+    else vis.forEach(function (e) { S.selected.add(e.id); });
+    renderList(); updateSelectBar();
+  };
+  $('#btnPrintSelected').onclick = function () {
+    var vis = visibleEntries().filter(function (e) { return S.selected.has(e.id); });
+    if (!vis.length) { toast('인쇄할 내역을 먼저 골라 주세요'); return; }
+    openPrintPreview(vis);
+  };
+  $('#btnPreviewClose').onclick = function () { $('#printPreviewModal').hidden = true; };
+  $('#btnDoPrint').onclick = doPrint;
+  $('#optPhotos').onchange = renderPrintPreview;
+  $('#optMemo').onchange = renderPrintPreview;
+  window.addEventListener('resize', function () {
+    if (!$('#printPreviewModal').hidden) fitPreview();
+  });
+
+  $('#periodTabs').addEventListener('click', function (ev) {
+    var b = ev.target.closest('button[data-period]');
+    if (b) setPeriod(b.getAttribute('data-period'));
+  });
+  $('#btnApplyRange').onclick = function () {
+    var a = $('#fromDate').value, b = $('#toDate').value;
+    if (!isISODate(a) || !isISODate(b)) { toast('시작일과 마지막 날을 모두 골라 주세요'); return; }
+    if (a > b) { var t = a; a = b; b = t; }
+    S.from = a; S.to = b;
+    $('#fromDate').value = a; $('#toDate').value = b;
+    renderAll();
+    toast('기간을 적용했습니다');
+  };
+
+  $('#typeTabs').addEventListener('click', function (ev) {
+    var b = ev.target.closest('button[data-type]');
+    if (!b) return;
+    S.type = b.getAttribute('data-type');
+    $$('#typeTabs button').forEach(function (x) { x.classList.toggle('on', x === b); });
+    renderAll();
+  });
+
+  var searchTimer = null;
+  $('#searchInput').addEventListener('input', function () {
+    var v = this.value;
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(function () {
+      S.q = v;
+      renderList();
+      updateSelectBar();
+      updateScopeNoteIfOpen();
+    }, 120);
+  });
+
+  $('#entryList').addEventListener('click', function (ev) {
+    var card = ev.target.closest('.entry');
+    if (!card) return;
+    var id = card.getAttribute('data-id');
+    if (S.selecting) toggleSelect(id);
+    else openDetail(id);
+  });
+  $('#entryList').addEventListener('keydown', function (ev) {
+    if (ev.key !== 'Enter' && ev.key !== ' ') return;
+    var card = ev.target.closest('.entry');
+    if (!card) return;
+    ev.preventDefault();
+    var id = card.getAttribute('data-id');
+    if (S.selecting) toggleSelect(id); else openDetail(id);
+  });
+
+  $('#btnDetailClose').onclick = function () { $('#detailModal').hidden = true; };
+  $('#detailEdit').onclick = function () {
+    var id = S.detailId;
+    $('#detailModal').hidden = true;
+    openForm(id);
+  };
+  $('#detailDelete').onclick = function () { deleteEntry(S.detailId); };
+  $('#detailPrintOne').onclick = function () {
+    var e = findEntry(S.detailId);
+    if (e) openPrintPreview([e]);
+  };
+  $('#btnPhotoClose').onclick = function () { $('#photoModal').hidden = true; };
+
+  document.addEventListener('keydown', function (ev) {
+    var calcOpen = !$('#calcModal').hidden;
+    if (calcOpen) {
+      var k = ev.key;
+      if (/^[0-9]$/.test(k)) { calcKey(k); return; }
+      if (k === '.' || k === '%') { calcKey(k); return; }
+      if (k === '+' || k === '-' || k === '*' || k === '/') {
+        calcKey(k === '*' ? '×' : k === '/' ? '÷' : k === '-' ? '−' : '+');
+        return;
+      }
+      if (k === 'Enter' || k === '=') { ev.preventDefault(); calcEquals(); return; }
+      if (k === 'Backspace') { ev.preventDefault(); calcBack(); return; }
+      if (k === 'Escape') { $('#calcModal').hidden = true; return; }
+    }
+    if (ev.key === 'Escape') closeTop();
+  });
+}
+function updateScopeNoteIfOpen() { if (!$('#exportModal').hidden) updateScopeNote(); }
+function closeTop() {
+  var order = ['photoModal', 'calcModal', 'printPreviewModal', 'exportModal', 'settingsModal', 'detailModal', 'formModal'];
+  for (var i = 0; i < order.length; i++) {
+    var m = document.getElementById(order[i]);
+    if (m && !m.hidden) {
+      if (order[i] === 'formModal') closeForm(); else m.hidden = true;
+      return;
+    }
+  }
+}
+
+/* ── 시작 ───────────────────────────────────────────── */
+function registerSW() {
+  if (!('serviceWorker' in navigator)) return;
+  if (location.protocol !== 'http:' && location.protocol !== 'https:') return;
+  navigator.serviceWorker.register('./sw.js').catch(function (err) {
+    console.warn('서비스 워커 등록 실패', err);
+  });
+}
+function init() {
+  buildPickers();
+  bindEvents();
+  $('#f_date').value = todayISO();
+  loadData().then(function () {
+    renderAll();
+    var size = S.atts.reduce(function (n, a) { return n + (a.size || 0); }, 0);
+    $('#storageLite').textContent = S.atts.length ? ('첨부 ' + S.atts.length + '개 · ' + fmtSize(size)) : '';
+  }).catch(function (err) {
+    console.error(err);
+    var box = document.createElement('div');
+    box.className = 'card';
+    box.style.cssText = 'margin:12px;border:2px solid #e7b1ac;background:#fdecea;color:#8f1a13;font-weight:700';
+    box.textContent = '저장 공간을 열지 못했습니다. 브라우저의 시크릿 모드가 아닌지 확인해 주세요. (' + err.message + ')';
+    document.querySelector('main').prepend(box);
+  });
+  registerSW();
+}
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+else init();
+
+</script>
+</body>
+</html>

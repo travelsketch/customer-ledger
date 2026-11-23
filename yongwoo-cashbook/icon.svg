@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="용우입출금관리대장">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#12558a"/>
+      <stop offset="1" stop-color="#0f766e"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <rect x="96" y="118" width="320" height="296" rx="34" fill="#ffffff"/>
+  <rect x="96" y="118" width="320" height="62" rx="34" fill="#0b3f66"/>
+  <rect x="96" y="152" width="320" height="28" fill="#0b3f66"/>
+  <circle cx="126" cy="149" r="10" fill="#8fd3c6"/>
+  <rect x="150" y="141" width="132" height="16" rx="8" fill="#d7e8f5"/>
+  <rect x="132" y="214" width="72" height="18" rx="9" fill="#9fb3c8"/>
+  <rect x="132" y="250" width="248" height="18" rx="9" fill="#dbe6f0"/>
+  <rect x="132" y="286" width="200" height="18" rx="9" fill="#dbe6f0"/>
+  <rect x="132" y="336" width="96" height="22" rx="11" fill="#0f766e"/>
+  <rect x="240" y="336" width="80" height="22" rx="11" fill="#c0392b"/>
+  <g transform="rotate(180 300 252)"><path d="M300 208l34 40h-22v44h-24v-44h-22z" fill="#0f766e"/></g>
+  <path d="M196 208l-34 40h22v44h24v-44h22z" fill="#c0392b" opacity="0.92"/>
+  <rect x="132" y="376" width="188" height="14" rx="7" fill="#c9d8ef"/>
+</svg>

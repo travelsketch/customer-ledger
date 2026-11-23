@@ -1,0 +1,2974 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#174ea6">
+<meta name="color-scheme" content="light">
+<meta name="description" content="고객과 가입보험을 한곳에서 관리하는 휴대폰 앱. 자료는 이 기기에만 저장됩니다.">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="용우고객관리대장">
+<title>용우고객관리대장</title>
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<style>
+/* ================= 기본 ================= */
+:root{
+  color-scheme:light;
+  --bg:#eef2f7;
+  --card:#ffffff;
+  --ink:#15202b;
+  --ink-soft:#2c3b4c;
+  --muted:#5a6b7d;
+  --line:#d9e2ec;
+  --line-strong:#c2cfdd;
+  --primary:#174ea6;
+  --primary-dark:#123c80;
+  --primary-soft:#e7effb;
+  --danger:#b3261e;
+  --danger-soft:#fdecea;
+  --ok:#0f6b4f;
+  --ok-soft:#e6f4ee;
+  --warn:#8a4b00;
+  --warn-soft:#fff3df;
+  --radius:16px;
+  --shadow:0 1px 2px rgba(16,32,52,.07), 0 6px 18px rgba(16,32,52,.06);
+  --tap:52px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:rgba(23,78,166,.12)}
+html,body{margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{
+  background:var(--bg);
+  color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Malgun Gothic","Apple SD Gothic Neo","Noto Sans KR","Noto Sans CJK KR",Roboto,"Helvetica Neue",Arial,sans-serif;
+  font-size:17px;
+  line-height:1.5;
+  word-break:keep-all;
+  overflow-wrap:anywhere;
+}
+h1,h2,h3,h4,p{margin:0}
+button{font-family:inherit;font-size:inherit;color:inherit;border:0;background:none;cursor:pointer}
+input,textarea,select{font-family:inherit;font-size:17px;color:var(--ink)}
+a{color:var(--primary)}
+.money{font-variant-numeric:tabular-nums}
+.sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+
+/* ================= 공통 버튼 ================= */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  min-height:var(--tap);padding:0 18px;border-radius:12px;
+  background:#eef3f9;color:var(--ink-soft);
+  font-size:16.5px;font-weight:700;letter-spacing:-.01em;
+  border:1px solid transparent;
+  transition:background .12s ease, transform .06s ease;
+}
+.btn:active{transform:translateY(1px)}
+.btn.primary{background:var(--primary);color:#fff;box-shadow:0 2px 8px rgba(23,78,166,.28)}
+.btn.primary:active{background:var(--primary-dark)}
+.btn.outline{background:#fff;border-color:var(--line-strong);color:var(--primary)}
+.btn.danger{background:var(--danger);color:#fff}
+.btn.ghost-danger{background:var(--danger-soft);color:var(--danger)}
+.btn.small{min-height:44px;padding:0 14px;font-size:15.5px;border-radius:10px}
+.btn.block{width:100%}
+.btn:disabled{opacity:.45;box-shadow:none}
+
+/* ================= 앱 뼈대 ================= */
+#app{min-height:100vh;display:flex;flex-direction:column}
+
+.topbar{
+  position:sticky;top:0;z-index:20;
+  background:linear-gradient(180deg,#1b5299 0%,#174ea6 100%);
+  color:#fff;
+  padding:10px 14px 8px;
+  padding-top:calc(10px + env(safe-area-inset-top));
+  box-shadow:0 2px 10px rgba(13,38,74,.18);
+}
+.topbar-row{display:flex;align-items:center;gap:10px}
+.topbar h1{font-size:22px;font-weight:800;letter-spacing:-.02em;flex:1}
+.icon-btn{
+  width:46px;height:46px;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;
+  background:rgba(255,255,255,.16);font-size:21px;line-height:1
+}
+.icon-btn:active{background:rgba(255,255,255,.3)}
+.search-wrap{position:relative;margin-top:10px}
+.search-wrap input{
+  width:100%;height:52px;border-radius:14px;border:0;
+  background:#fff;color:var(--ink);
+  padding:0 46px 0 44px;font-size:17px;
+  box-shadow:0 1px 0 rgba(0,0,0,.06);
+}
+.search-wrap input::placeholder{color:#8b98a8}
+.search-wrap input::-webkit-search-cancel-button{-webkit-appearance:none;appearance:none}
+.search-ico{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:18px;color:#6d7d8f;pointer-events:none}
+.clear-btn{
+  position:absolute;right:6px;top:50%;transform:translateY(-50%);
+  width:40px;height:40px;border-radius:50%;color:#5a6b7d;font-size:18px;
+  display:flex;align-items:center;justify-content:center
+}
+.clear-btn[hidden]{display:none}
+
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;padding-bottom:2px}
+.chip{
+  flex:0 0 auto;min-height:44px;padding:0 14px;border-radius:999px;
+  background:rgba(255,255,255,.16);color:#fff;font-size:15px;font-weight:700;
+  border:1px solid rgba(255,255,255,.28);white-space:nowrap;
+  display:inline-flex;align-items:center;gap:6px;
+}
+.chip[aria-pressed="true"]{background:#fff;color:var(--primary-dark);border-color:#fff}
+
+.sort-wrap{position:relative;margin-left:auto;display:flex;align-items:center;gap:6px;flex:0 0 auto}
+.sort-wrap select{
+  min-height:44px;border-radius:999px;border:1px solid rgba(255,255,255,.3);
+  background:rgba(255,255,255,.16);color:#fff;padding:0 30px 0 13px;font-size:14.5px;font-weight:700;
+  appearance:none;-webkit-appearance:none;
+  background-image:linear-gradient(45deg,transparent 50%,#fff 50%),linear-gradient(135deg,#fff 50%,transparent 50%);
+  background-position:calc(100% - 17px) 19px,calc(100% - 12px) 19px;
+  background-size:5px 5px,5px 5px;background-repeat:no-repeat;
+}
+.sort-wrap select option{color:#15202b;background:#fff}
+.listmeta{
+  margin-top:10px;font-size:14.5px;color:rgba(255,255,255,.9);
+  display:flex;align-items:center;gap:8px;
+}
+.listmeta .mtext{flex:1;min-width:0;line-height:1.4}
+.listmeta b{color:#fff}
+
+.list{flex:1;padding:12px 12px 112px;display:flex;flex-direction:column;gap:10px}
+
+/* ================= 고객 카드 ================= */
+.card{
+  position:relative;display:flex;gap:10px;align-items:stretch;
+  background:var(--card);border:1px solid #e2e9f2;border-radius:var(--radius);
+  box-shadow:var(--shadow);padding:13px 14px;
+  cursor:pointer;
+}
+.card:active{background:#fafcff}
+.card.selected{border-color:var(--primary);box-shadow:0 0 0 2px rgba(23,78,166,.2),var(--shadow)}
+.card-check{
+  display:none;flex:0 0 auto;align-items:center;padding-right:2px;
+}
+.select-mode .card-check{display:flex}
+.card-check input{
+  width:26px;height:26px;accent-color:var(--primary);margin:0;pointer-events:none
+}
+.card-main{flex:1;min-width:0}
+.card-top{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.cname{font-size:20px;font-weight:800;letter-spacing:-.02em}
+.cage{font-size:14.5px;color:var(--muted);font-weight:700}
+.cphone{
+  display:inline-flex;align-items:center;gap:6px;margin-top:1px;
+  font-size:17px;font-weight:700;color:var(--primary);text-decoration:none;
+  min-height:44px;padding:0 2px;font-variant-numeric:tabular-nums;
+}
+.cphone .dot{width:5px;height:5px;border-radius:50%;background:var(--line-strong)}
+.cline{display:flex;gap:6px;font-size:15px;color:var(--ink-soft);margin-top:1px}
+.cline .k{color:var(--muted);flex:0 0 auto;font-size:13.5px;padding-top:2px}
+.cline .v{min-width:0;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.badges{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.badge{
+  display:inline-flex;align-items:center;gap:4px;
+  padding:3px 9px;border-radius:999px;background:#eef2f8;color:#33465c;
+  font-size:13.5px;font-weight:700;font-variant-numeric:tabular-nums;
+}
+.badge.pay{background:var(--primary-soft);color:var(--primary-dark)}
+.badge.soon{background:var(--warn-soft);color:var(--warn)}
+.badge.expired{background:var(--danger-soft);color:var(--danger)}
+.badge.sample{background:#f1eefc;color:#5b3ea8}
+.card-right{flex:0 0 auto;display:flex;flex-direction:column;align-items:flex-end;justify-content:flex-start;gap:2px;padding-left:2px}
+.cfee{font-size:17.5px;font-weight:800;color:var(--primary-dark);white-space:nowrap;font-variant-numeric:tabular-nums}
+.cfee span{font-size:13.5px;font-weight:700;margin-left:1px}
+.cfee.zero{color:var(--muted);font-size:15px}
+.cins{font-size:13.5px;color:var(--muted);font-weight:700}
+
+/* 빈 상태 */
+.empty{
+  margin:26px 6px;padding:28px 20px;text-align:center;
+  background:#fff;border:1px dashed var(--line-strong);border-radius:20px;
+}
+.empty .em-ico{font-size:44px;line-height:1;margin-bottom:10px}
+.empty h2{font-size:19px;font-weight:800;margin-bottom:6px}
+.empty p{color:var(--muted);font-size:15.5px;margin-bottom:18px;line-height:1.55}
+.empty .row{display:grid;gap:10px}
+
+.sample-note{
+  display:flex;gap:10px;align-items:center;flex-wrap:wrap;
+  background:#f1eefc;color:#4a3492;border:1px solid #ddd4f7;
+  border-radius:14px;padding:10px 14px;font-size:14.5px;font-weight:700;
+}
+.sample-note button{margin-left:auto;color:#4a3492;text-decoration:underline;font-weight:800;min-height:44px}
+
+/* ================= 하단 바 ================= */
+.bottombar{
+  position:fixed;left:0;right:0;bottom:0;z-index:30;
+  display:grid;grid-template-columns:1fr 1.35fr 1fr;gap:8px;
+  padding:9px 12px calc(9px + env(safe-area-inset-bottom));
+  background:#fff;
+  border-top:1px solid var(--line);
+  box-shadow:0 -4px 18px rgba(16,32,52,.07);
+}
+.bottombar[hidden]{display:none}
+.bottombar .btn{min-height:56px;font-size:16.5px;border-radius:14px}
+.selectbar{grid-template-columns:1fr 1.5fr 0.85fr}
+
+/* ================= 모달 ================= */
+.modal-backdrop{
+  position:fixed;inset:0;z-index:60;background:#f3f6fa;
+  display:flex;flex-direction:column;
+}
+.modal-backdrop[hidden]{display:none}
+.modal-sheet{
+  flex:1;display:flex;flex-direction:column;min-height:0;
+  background:#f3f6fa;
+  animation:slideUp .18s ease-out;
+}
+@keyframes slideUp{from{transform:translateY(14px);opacity:.6}to{transform:none;opacity:1}}
+.modal-head{
+  display:flex;align-items:center;gap:10px;
+  padding:12px 14px;padding-top:calc(12px + env(safe-area-inset-top));
+  background:#fff;border-bottom:1px solid var(--line);
+  position:sticky;top:0;z-index:2;
+}
+.modal-head h2{font-size:19px;font-weight:800;flex:1;letter-spacing:-.01em}
+.modal-close{
+  width:46px;height:46px;border-radius:12px;background:#eef3f9;color:#41556a;
+  display:inline-flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;flex:0 0 auto
+}
+.modal-body{flex:1;overflow-y:auto;padding:14px 14px 24px;-webkit-overflow-scrolling:touch}
+.modal-foot{
+  display:flex;gap:8px;padding:10px 14px calc(10px + env(safe-area-inset-bottom));
+  background:#fff;border-top:1px solid var(--line);
+}
+.modal-foot[hidden]{display:none}
+.modal-foot .btn{flex:1}
+
+/* ================= 폼 ================= */
+.field{display:block;margin-bottom:12px}
+.field > .label{display:block;font-size:15px;font-weight:800;color:var(--ink-soft);margin-bottom:6px}
+.req{color:var(--danger);font-weight:800}
+.field input,.field textarea,.field select{
+  width:100%;min-width:0;min-height:54px;padding:12px 14px;border-radius:12px;
+  border:1.5px solid var(--line-strong);background:#fff;color:var(--ink);
+  font-size:17px;
+}
+.field textarea{min-height:70px;resize:vertical;line-height:1.5}
+.field input:focus,.field textarea:focus,.field select:focus{
+  outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(23,78,166,.15)
+}
+.field input::placeholder,.field textarea::placeholder{color:#9aa7b6}
+.field .hint{font-size:13.5px;color:var(--muted);margin-top:4px}
+.field.bad input{border-color:var(--danger);background:#fffafa}
+.field-row{display:grid;grid-template-columns:repeat(2, minmax(0, 1fr));gap:10px}
+.field-row > .field{margin-bottom:12px}
+.card-block{background:#fff;border:1px solid #e2e9f2;border-radius:16px;padding:14px;margin-bottom:12px;box-shadow:var(--shadow)}
+.section-head{display:flex;align-items:center;gap:10px;margin:18px 0 10px}
+.section-head h3{font-size:17px;font-weight:800;flex:1}
+.ins-block{border:1.5px solid var(--line);border-radius:14px;padding:12px 12px 4px;margin-bottom:12px;background:#fbfdff}
+.ins-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.ins-head strong{font-size:15.5px;color:var(--primary-dark);flex:1}
+.link-danger{color:var(--danger);font-weight:800;font-size:14.5px;min-height:44px;padding:0 6px;border-radius:8px}
+.ins-total{
+  display:flex;justify-content:space-between;align-items:center;gap:10px;
+  background:var(--primary-soft);color:var(--primary-dark);border-radius:12px;
+  padding:12px 14px;font-size:15.5px;font-weight:800;margin-bottom:12px
+}
+.ins-total b{font-size:18px;font-variant-numeric:tabular-nums}
+.form-note{font-size:14px;color:var(--muted);line-height:1.55;margin:2px 0 4px}
+.form-error{
+  background:var(--danger-soft);color:var(--danger);border-radius:12px;
+  padding:11px 14px;font-size:15px;font-weight:700;margin-bottom:12px
+}
+.form-error[hidden]{display:none}
+
+/* ================= 상세 ================= */
+.detail-top{
+  background:#fff;border-radius:16px;padding:16px;box-shadow:var(--shadow);margin-bottom:12px;
+  border:1px solid #e2e9f2
+}
+.dname{font-size:24px;font-weight:800;letter-spacing:-.02em;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.call-btn{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  margin-top:12px;min-height:54px;border-radius:14px;
+  background:var(--ok-soft);color:var(--ok);font-size:18px;font-weight:800;
+  text-decoration:none;font-variant-numeric:tabular-nums;
+}
+.info-card{background:#fff;border:1px solid #e2e9f2;border-radius:16px;box-shadow:var(--shadow);overflow:hidden;margin-bottom:12px}
+.info-row{display:flex;gap:12px;padding:12px 16px;border-bottom:1px solid #eef2f7;font-size:16px}
+.info-row:last-child{border-bottom:0}
+.info-row .k{flex:0 0 78px;color:var(--muted);font-size:14.5px;font-weight:700;padding-top:1px}
+.info-row .v{flex:1;min-width:0;white-space:pre-wrap}
+.info-row .v.empty-v{color:#9aa7b6}
+.d-summary{
+  display:flex;justify-content:space-between;align-items:center;gap:10px;
+  background:var(--primary);color:#fff;border-radius:14px;padding:14px 16px;margin:4px 0 8px;
+  font-size:15px;font-weight:700
+}
+.d-summary b{font-size:20px}
+
+.ins-card{
+  background:#fff;border:1px solid #e2e9f2;border-left:5px solid var(--primary);
+  border-radius:14px;padding:13px 14px;box-shadow:var(--shadow);margin-bottom:10px
+}
+.ins-card .itop{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.ins-card .icomp{font-size:16px;font-weight:800;color:var(--primary-dark)}
+.ins-card .ifee{margin-left:auto;font-size:17px;font-weight:800;font-variant-numeric:tabular-nums}
+.ins-card .iprod{font-size:15.5px;margin-top:2px;color:var(--ink-soft)}
+.ins-card .imeta{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:7px;font-size:13.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+
+/* ================= 설정 ================= */
+.set-group{background:#fff;border:1px solid #e2e9f2;border-radius:16px;box-shadow:var(--shadow);overflow:hidden;margin-bottom:12px}
+.set-group h3{font-size:15px;font-weight:800;color:var(--muted);padding:14px 16px 6px;background:#fff}
+.set-item{
+  display:flex;align-items:center;gap:12px;width:100%;text-align:left;
+  padding:14px 16px;border-top:1px solid #f1f4f8;min-height:58px
+}
+.set-item .si-main{flex:1;min-width:0;display:block}
+.set-item .si-title{font-size:16.5px;font-weight:700;display:block}
+.set-item .si-sub{font-size:13.5px;color:var(--muted);margin-top:1px;line-height:1.45;display:block}
+.set-item .si-ico{flex:0 0 26px;font-size:19px;text-align:center}
+.set-item:active{background:#f7fafd}
+.set-item.danger .si-title{color:var(--danger)}
+.stat-row{display:flex;gap:10px;padding:2px 16px 14px}
+.stat{flex:1;background:#f6f9fd;border-radius:12px;padding:10px 12px;text-align:center}
+.stat .sv{font-size:19px;font-weight:800;color:var(--primary-dark);font-variant-numeric:tabular-nums}
+.stat .sl{font-size:13px;color:var(--muted);margin-top:1px;font-weight:700}
+
+/* ================= 인쇄 미리보기 ================= */
+.preview{
+  position:fixed;inset:0;z-index:70;background:#dfe6ee;
+  display:flex;flex-direction:column;
+}
+.preview[hidden]{display:none}
+.preview-toolbar{
+  display:flex;align-items:center;gap:8px;
+  padding:10px 12px;padding-top:calc(10px + env(safe-area-inset-top));
+  background:#fff;border-bottom:1px solid var(--line);box-shadow:0 2px 10px rgba(16,32,52,.08);
+}
+.preview-toolbar .pt-title{flex:1;min-width:0;font-size:15px;font-weight:800;color:var(--ink)}
+.preview-toolbar .pt-sub{display:block;font-size:12.5px;color:var(--muted);font-weight:700;margin-top:1px}
+.preview-toolbar .btn{min-height:48px;padding:0 16px}
+.preview-scroll{flex:1;overflow:auto;padding:10px;display:flex;justify-content:center;align-items:flex-start}
+.sheet-holder{position:relative;margin:0 auto;overflow:hidden}
+.sheet{
+  width:794px;min-height:1123px;background:#fff;color:#000;
+  padding:42px 44px 52px;box-shadow:0 6px 26px rgba(16,32,52,.22);
+  transform-origin:top left;
+}
+
+/* ================= 인쇄 양식 ================= */
+.sheet-head{
+  display:flex;justify-content:space-between;align-items:flex-end;gap:16px;
+  border-bottom:2.5px solid #15202b;padding-bottom:7px;margin-bottom:12px
+}
+.sheet-head h1{font-size:22pt;font-weight:800;letter-spacing:.16em;line-height:1.1}
+.sheet-meta{font-size:9.5pt;color:#23303d;text-align:right;line-height:1.5;font-variant-numeric:tabular-nums}
+.sheet-meta b{font-size:10.5pt}
+.p-cust{border:1px solid #8393a5;border-radius:5px;padding:7px 9px 8px;margin-bottom:10px;break-inside:avoid;page-break-inside:avoid}
+.p-cust-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;margin-bottom:3px}
+.p-idx{
+  display:inline-block;min-width:17px;height:17px;border-radius:3px;background:#15202b;color:#fff;
+  text-align:center;font-size:8.5pt;line-height:17px;font-weight:700
+}
+.p-name{font-size:12.5pt;font-weight:800;letter-spacing:-.01em}
+.p-sub{font-size:9pt;color:#33414f;font-variant-numeric:tabular-nums}
+.p-info{display:flex;flex-wrap:wrap;gap:2px 14px;font-size:9pt;color:#2b3a4b;margin:2px 0 5px;line-height:1.45}
+.p-info b{font-weight:700;color:#5a6b7d;margin-right:4px}
+.p-table{width:100%;border-collapse:collapse;table-layout:fixed}
+.p-table th,.p-table td{border:1px solid #8a99aa;padding:3px 5px;font-size:9pt;vertical-align:middle;line-height:1.35}
+.p-table th{background:#eaeff6;font-weight:700;text-align:center;font-size:8.5pt}
+.p-table td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.p-table td.c{text-align:center;font-variant-numeric:tabular-nums}
+.p-table tfoot td{background:#f5f8fc;font-weight:700}
+.p-none{border:1px dashed #a8b4c2;border-radius:4px;padding:5px 8px;font-size:9pt;color:#5a6b7d}
+.sheet-foot{margin-top:14px;padding-top:6px;border-top:1px solid #b8c3cf;font-size:8.5pt;color:#5a6b7d;display:flex;justify-content:space-between}
+
+/* ================= 토스트 / 확인창 ================= */
+.toast{
+  position:fixed;left:12px;right:12px;bottom:calc(84px + env(safe-area-inset-bottom));z-index:95;
+  display:flex;align-items:center;gap:10px;
+  background:#20313f;color:#fff;border-radius:14px;padding:12px 14px;
+  font-size:15.5px;font-weight:700;box-shadow:0 8px 26px rgba(0,0,0,.28);
+  pointer-events:none;
+  animation:toastIn .16s ease-out;
+}
+.toast[hidden]{display:none}
+.toast.above-modal{bottom:calc(96px + env(safe-area-inset-bottom))}
+.toast .tmsg{flex:1;min-width:0}
+.toast .taction{
+  min-height:44px;padding:0 12px;border-radius:10px;background:rgba(255,255,255,.16);
+  color:#fff;font-weight:800;font-size:15px;flex:0 0 auto;pointer-events:auto
+}
+@keyframes toastIn{from{transform:translateY(10px);opacity:0}to{transform:none;opacity:1}}
+
+.confirm-back{position:fixed;inset:0;z-index:90;background:rgba(12,24,38,.5);display:flex;align-items:center;justify-content:center;padding:18px}
+.confirm-back[hidden]{display:none}
+.confirm-box{background:#fff;border-radius:18px;padding:20px 18px 14px;width:100%;max-width:420px;box-shadow:0 20px 50px rgba(0,0,0,.3)}
+.confirm-box h3{font-size:18.5px;font-weight:800;margin-bottom:6px}
+.confirm-box p{font-size:15.5px;color:var(--ink-soft);line-height:1.55;white-space:pre-wrap}
+.confirm-actions{display:grid;gap:8px;margin-top:18px}
+.confirm-actions .btn{min-height:54px;font-size:16.5px}
+
+/* ================= 계산기 ================= */
+.calc-back{position:fixed;inset:0;z-index:88;background:rgba(12,24,38,.55);display:flex;align-items:flex-end;justify-content:center}
+.calc-back[hidden]{display:none}
+.calc-sheet{
+  width:100%;max-width:470px;max-height:100%;overflow-y:auto;background:#f7f9fc;
+  border-radius:20px 20px 0 0;box-shadow:0 -8px 34px rgba(0,0,0,.3);
+  padding-bottom:env(safe-area-inset-bottom);animation:calcUp .18s ease-out
+}
+@keyframes calcUp{from{transform:translateY(20px);opacity:.6}to{transform:none;opacity:1}}
+.calc-head{display:flex;align-items:center;gap:10px;padding:10px 12px 4px}
+.calc-head h2{flex:1;font-size:18px;font-weight:800;letter-spacing:-.01em}
+.calc-head .modal-close{width:46px;height:46px}
+.calc-display{
+  background:#1c2a38;color:#fff;border-radius:14px;margin:0 12px 10px;padding:10px 14px 12px;
+  min-height:96px;display:flex;flex-direction:column;justify-content:flex-end;text-align:right
+}
+.calc-expr{
+  font-size:14px;color:rgba(255,255,255,.65);min-height:20px;line-height:20px;
+  font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis
+}
+.calc-out{
+  font-size:37px;font-weight:800;line-height:1.15;letter-spacing:-.01em;
+  font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis
+}
+.calc-pad{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:0 12px}
+.ck{
+  min-height:58px;border-radius:14px;background:#fff;border:1px solid #dbe4ee;
+  font-size:24px;font-weight:700;color:var(--ink);display:flex;align-items:center;justify-content:center;
+  box-shadow:0 1px 2px rgba(16,32,52,.06);font-variant-numeric:tabular-nums
+}
+.ck:active{background:#eef3f9}
+.ck.fn{background:#e9eff7;color:#41556a;font-size:21px}
+.ck.op{background:var(--primary-soft);color:var(--primary-dark);font-size:27px;font-weight:800}
+.ck.eq{background:var(--primary);color:#fff;font-size:27px;font-weight:800;box-shadow:0 2px 8px rgba(23,78,166,.28)}
+.ck.eq:active{background:var(--primary-dark)}
+.calc-foot{display:flex;gap:8px;padding:10px 12px 8px}
+.calc-foot .btn{flex:1;min-height:54px}
+.calc-hint{font-size:13px;color:var(--muted);text-align:center;padding:0 14px 12px;line-height:1.45;min-height:18px}
+.calc-hint.on{color:var(--ok);font-weight:700}
+
+/* ================= 첨부 파일 ================= */
+.att-card{background:#fff;border:1px solid #e2e9f2;border-radius:16px;box-shadow:var(--shadow);padding:12px 12px 10px;margin-bottom:12px}
+.att-head{display:flex;align-items:center;gap:8px;font-size:15.5px;font-weight:800;color:var(--ink-soft);margin-bottom:8px;flex-wrap:wrap}
+.att-head b{color:var(--primary-dark)}
+.att-head .att-note{margin-left:auto;font-size:12.5px;color:var(--muted);font-weight:700}
+.att-list{display:flex;flex-direction:column;gap:8px}
+.att-item{
+  display:flex;align-items:center;gap:9px;width:100%;text-align:left;
+  background:#f7fafd;border:1px solid #e2e9f2;border-radius:12px;padding:7px 8px;min-height:62px;
+  text-decoration:none;color:inherit
+}
+.att-item:active{background:#eef4fb}
+.att-thumb{
+  flex:0 0 46px;width:46px;height:46px;border-radius:10px;background:#e7eef7;
+  display:flex;align-items:center;justify-content:center;overflow:hidden;font-size:20px
+}
+.att-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+button.att-thumb{padding:0;border:0}
+.att-main{flex:1;min-width:0;display:block}
+.att-name{display:block;font-size:14.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.att-size{display:block;font-size:12.5px;color:var(--muted);font-weight:700;margin-top:2px;font-variant-numeric:tabular-nums}
+.att-act{
+  flex:0 0 auto;min-height:44px;padding:0 10px;border-radius:10px;background:#fff;
+  border:1px solid var(--line-strong);color:var(--primary);font-size:13.5px;font-weight:800;
+  display:inline-flex;align-items:center;justify-content:center;text-decoration:none;white-space:nowrap
+}
+.att-del{
+  flex:0 0 auto;width:44px;min-height:44px;border-radius:10px;color:var(--danger);
+  font-size:19px;display:flex;align-items:center;justify-content:center
+}
+.att-del:active{background:var(--danger-soft)}
+.att-empty{font-size:14px;color:var(--muted);padding:2px 2px 4px;line-height:1.5}
+.att-btns{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+.fee-row{display:flex;gap:8px;align-items:stretch}
+.fee-row input{flex:1;min-width:0}
+.fee-calc{
+  flex:0 0 54px;min-height:54px;border-radius:12px;border:1.5px solid var(--line-strong);
+  background:#fff;font-size:22px;display:flex;align-items:center;justify-content:center
+}
+.fee-calc:active{background:var(--primary-soft)}
+
+/* 사진 크게 보기 */
+.lightbox{position:fixed;inset:0;z-index:96;background:#0b1118;display:flex;flex-direction:column}
+.lightbox[hidden]{display:none}
+.lb-head{display:flex;align-items:center;gap:8px;padding:10px 12px;padding-top:calc(10px + env(safe-area-inset-top))}
+.lb-head .lb-title{flex:1;min-width:0;color:#fff;font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lb-btn{
+  min-height:46px;padding:0 14px;border-radius:12px;background:rgba(255,255,255,.16);color:#fff;
+  font-weight:700;font-size:15px;display:inline-flex;align-items:center;justify-content:center;text-decoration:none
+}
+.lb-body{flex:1;display:flex;align-items:center;justify-content:center;padding:8px;overflow:hidden}
+.lb-body img{max-width:100%;max-height:100%;object-fit:contain;border-radius:8px;background:#fff}
+.lb-foot{display:flex;gap:8px;padding:10px 12px calc(16px + env(safe-area-inset-bottom));justify-content:center}
+
+/* 인쇄 미리보기 — 첨부 사진 */
+.preview-sub{display:flex;align-items:center;gap:10px;padding:5px 12px;background:#fff;border-bottom:1px solid var(--line)}
+.pt-chk{display:flex;align-items:center;gap:7px;min-height:44px;padding:0 10px;border-radius:10px;background:#f1f5fa;font-size:14px;font-weight:700;color:var(--ink-soft);white-space:nowrap}
+.pt-chk input{width:20px;height:20px;accent-color:var(--primary);margin:0}
+.pt-chk.disabled{opacity:.5}
+.pt-note{flex:1;text-align:right;font-size:12.5px;color:var(--muted);font-weight:700}
+.p-attach{margin-top:5px;display:flex;flex-wrap:wrap;gap:4px}
+.p-attach figure{margin:0;width:32%;border:1px solid #8a99aa;border-radius:3px;overflow:hidden;background:#fff;break-inside:avoid}
+.p-attach img{display:block;width:100%;height:82px;object-fit:cover;background:#f1f4f8}
+.p-attach figcaption{font-size:7pt;color:#33414f;padding:1px 3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* ================= 인쇄 ================= */
+@media print{
+  @page{size:A4 portrait;margin:12mm 10mm}
+  html,body{background:#fff !important;font-size:10pt}
+  #app,.preview-toolbar,.preview-sub,.modal-backdrop,.calc-back,.lightbox,.toast,.confirm-back,.sample-note{display:none !important}
+  .preview{position:static !important;display:block !important;background:#fff !important;inset:auto}
+  .preview[hidden]{display:none !important}
+  .preview-scroll{display:block !important;overflow:visible !important;padding:0 !important;height:auto !important;background:#fff !important}
+  .sheet-holder{width:auto !important;height:auto !important}
+  .sheet{
+    width:auto !important;min-height:0 !important;padding:0 !important;margin:0 !important;
+    box-shadow:none !important;transform:none !important;
+  }
+  .p-cust{break-inside:avoid;page-break-inside:avoid}
+  .p-table tr{break-inside:avoid;page-break-inside:avoid}
+}
+</style>
+</head>
+<body>
+
+<div id="app">
+  <header class="topbar">
+    <div class="topbar-row">
+      <h1>용우고객관리대장</h1>
+      <button class="icon-btn" id="btnCalc" aria-label="계산기 열기" title="계산기">🧮</button>
+      <button class="icon-btn" id="btnSettings" aria-label="설정 및 백업" title="설정">⚙</button>
+    </div>
+
+    <div class="search-wrap">
+      <span class="search-ico" aria-hidden="true">🔍</span>
+      <input id="search" type="search" inputmode="search" autocomplete="off" enterkeyhint="search"
+             placeholder="이름 · 전화 · 주소 · 차량 · 보험 검색" aria-label="고객 검색">
+      <button class="clear-btn" id="btnClearSearch" aria-label="검색어 지우기" hidden>✕</button>
+    </div>
+
+    <div class="chips" id="chips" role="group" aria-label="보조 필터">
+      <button class="chip" data-filter="all" aria-pressed="true">전체</button>
+      <button class="chip" data-filter="pay" aria-pressed="false">납입 임박</button>
+      <button class="chip" data-filter="due" aria-pressed="false">만기 임박</button>
+      <button class="chip" data-filter="none" aria-pressed="false">보험 없음</button>
+    </div>
+
+    <div class="listmeta" id="listmeta">
+      <span class="mtext" id="metatext"></span>
+      <div class="sort-wrap">
+        <label class="sr" for="sort">정렬</label>
+        <select id="sort">
+          <option value="name">이름순</option>
+          <option value="recent">최근 등록순</option>
+          <option value="fee">보험료 높은순</option>
+          <option value="due">만기 임박순</option>
+        </select>
+      </div>
+    </div>
+  </header>
+
+  <main class="list" id="list" aria-label="고객 목록"></main>
+
+  <nav class="bottombar" id="bottombar">
+    <button class="btn outline" id="btnSelectMode">선택</button>
+    <button class="btn primary" id="btnAdd">＋ 고객 추가</button>
+    <button class="btn outline" id="btnPrintAll">전체 인쇄</button>
+  </nav>
+
+  <nav class="bottombar selectbar" id="selectbar" hidden>
+    <button class="btn outline" id="btnSelectAll">전체 선택</button>
+    <button class="btn primary" id="btnPrintSelected">선택 인쇄 <span id="selCount">(0)</span></button>
+    <button class="btn outline" id="btnCancelSelect">취소</button>
+  </nav>
+</div>
+
+<!-- 모달 -->
+<div class="modal-backdrop" id="modal" hidden>
+  <div class="modal-sheet" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-head">
+      <h2 id="modalTitle">제목</h2>
+      <button class="modal-close" id="modalClose" aria-label="닫기">✕</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-foot" id="modalFoot" hidden></div>
+  </div>
+</div>
+
+<!-- 확인창 -->
+<div class="confirm-back" id="confirm" hidden>
+  <div class="confirm-box" role="alertdialog" aria-modal="true" aria-labelledby="confirmTitle">
+    <h3 id="confirmTitle">확인</h3>
+    <p id="confirmMsg"></p>
+    <div class="confirm-actions" id="confirmActions"></div>
+  </div>
+</div>
+
+<!-- 인쇄 미리보기 -->
+<div class="preview" id="preview" hidden>
+  <div class="preview-toolbar">
+    <button class="btn outline" id="btnPreviewClose">닫기</button>
+    <div class="pt-title">인쇄 미리보기<span class="pt-sub" id="previewMeta"></span></div>
+    <button class="btn primary" id="btnDoPrint">🖨 인쇄</button>
+  </div>
+  <div class="preview-sub">
+    <label class="pt-chk" id="ptChkWrap"><input type="checkbox" id="chkPrintPhotos"> 첨부 사진도 인쇄</label>
+    <span class="pt-note" id="ptAttachNote">첨부 사진 없음</span>
+  </div>
+  <div class="preview-scroll" id="previewScroll">
+    <div class="sheet-holder" id="sheetHolder"><div class="sheet" id="sheet"></div></div>
+  </div>
+</div>
+
+<!-- 계산기 -->
+<div class="calc-back" id="calc" hidden>
+  <div class="calc-sheet" role="dialog" aria-modal="true" aria-label="계산기">
+    <div class="calc-head">
+      <h2>계산기</h2>
+      <button class="modal-close" id="calcClose" aria-label="계산기 닫기">✕</button>
+    </div>
+    <div class="calc-display">
+      <div class="calc-expr" id="calcExpr"></div>
+      <div class="calc-out" id="calcOut">0</div>
+    </div>
+    <div class="calc-pad" id="calcPad">
+      <button type="button" class="ck fn" data-k="C">C</button>
+      <button type="button" class="ck fn" data-k="%" aria-label="퍼센트">%</button>
+      <button type="button" class="ck fn" data-k="back" aria-label="한 글자 지우기">⌫</button>
+      <button type="button" class="ck op" data-k="÷" aria-label="나누기">÷</button>
+      <button type="button" class="ck" data-k="7">7</button>
+      <button type="button" class="ck" data-k="8">8</button>
+      <button type="button" class="ck" data-k="9">9</button>
+      <button type="button" class="ck op" data-k="×" aria-label="곱하기">×</button>
+      <button type="button" class="ck" data-k="4">4</button>
+      <button type="button" class="ck" data-k="5">5</button>
+      <button type="button" class="ck" data-k="6">6</button>
+      <button type="button" class="ck op" data-k="−" aria-label="빼기">−</button>
+      <button type="button" class="ck" data-k="1">1</button>
+      <button type="button" class="ck" data-k="2">2</button>
+      <button type="button" class="ck" data-k="3">3</button>
+      <button type="button" class="ck op" data-k="+" aria-label="더하기">＋</button>
+      <button type="button" class="ck" data-k="00">00</button>
+      <button type="button" class="ck" data-k="0">0</button>
+      <button type="button" class="ck" data-k="." aria-label="소수점">.</button>
+      <button type="button" class="ck eq" data-k="=" aria-label="계산 결과">=</button>
+    </div>
+    <div class="calc-foot">
+      <button type="button" class="btn outline" id="calcCancel">닫기</button>
+      <button type="button" class="btn primary" id="calcApply">보험료에 넣기</button>
+    </div>
+    <p class="calc-hint" id="calcHint"></p>
+  </div>
+</div>
+
+<!-- 사진 크게 보기 -->
+<div class="lightbox" id="lightbox" hidden>
+  <div class="lb-head">
+    <span class="lb-title" id="lbTitle">사진</span>
+    <button type="button" class="lb-btn" id="lbClose">닫기</button>
+  </div>
+  <div class="lb-body"><img id="lbImg" alt="첨부 사진 크게 보기"></div>
+  <div class="lb-foot"><a class="lb-btn" id="lbSave" download>사진 저장</a></div>
+</div>
+
+<div class="toast" id="toast" hidden role="status" aria-live="polite">
+  <span class="tmsg" id="toastMsg"></span>
+  <button class="taction" id="toastAction" hidden></button>
+</div>
+
+<datalist id="insCompanies">
+  <option value="삼성생명"></option><option value="삼성화재"></option>
+  <option value="DB손해보험"></option><option value="현대해상"></option>
+  <option value="KB손해보험"></option><option value="메리츠화재"></option>
+  <option value="한화생명"></option><option value="한화손해보험"></option>
+  <option value="교보생명"></option><option value="라이나생명"></option>
+  <option value="흥국생명"></option><option value="흥국화재"></option>
+  <option value="NH농협생명"></option><option value="NH농협손해보험"></option>
+  <option value="신한라이프"></option><option value="동양생명"></option>
+  <option value="ABL생명"></option><option value="처브라이프"></option>
+  <option value="AIA생명"></option><option value="롯데손해보험"></option>
+  <option value="하나손해보험"></option><option value="캐롯손해보험"></option>
+  <option value="카카오페이손해보험"></option><option value="푸르덴셜생명"></option>
+</datalist>
+
+<script>
+(function(){
+  'use strict';
+
+  /* =========================================================
+     저장소
+     ========================================================= */
+  var STORE_KEY = 'customerLedger.v1';
+  var APP_VERSION = '1.2.0';
+  var DAY = 86400000;
+
+  var db = { version: 1, customers: [] };
+
+  function uid(){
+    return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  }
+
+  function load(){
+    try{
+      var raw = localStorage.getItem(STORE_KEY);
+      if(!raw) return;
+      var data = JSON.parse(raw);
+      if(data && Array.isArray(data.customers)) db = { version: 1, customers: data.customers.map(normalizeCustomer) };
+    }catch(e){
+      console.warn('저장된 자료를 읽지 못했습니다.', e);
+    }
+  }
+
+  var saveWarned = false;
+  function save(){
+    try{
+      localStorage.setItem(STORE_KEY, JSON.stringify({ version: 1, customers: db.customers }));
+      return true;
+    }catch(e){
+      if(!saveWarned){
+        saveWarned = true;
+        alert('저장 공간이 부족해 자료를 저장하지 못했습니다.\n설정에서 백업 파일을 먼저 내려받아 주세요.');
+      }
+      return false;
+    }
+  }
+
+  /* =========================================================
+     유틸
+     ========================================================= */
+  function esc(v){
+    return String(v == null ? '' : v).replace(/[&<>"']/g, function(m){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m];
+    });
+  }
+  function num(v){ var n = Number(String(v == null ? '' : v).replace(/[^0-9]/g, '')); return isFinite(n) ? n : 0; }
+  function won(n){ return (Number(n) || 0).toLocaleString('ko-KR') + '원'; }
+  function pad2(n){ return (n < 10 ? '0' : '') + n; }
+  function ymd(d){ return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); }
+  function startOfToday(){ var d = new Date(); d.setHours(0,0,0,0); return d; }
+  function digits(s){ return String(s == null ? '' : s).replace(/[^0-9]/g, ''); }
+
+  function parseDate(s){
+    if(!s) return null;
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(s).trim());
+    if(!m) return null;
+    var d = new Date(+m[1], +m[2] - 1, +m[3]);
+    if(d.getFullYear() !== +m[1] || d.getMonth() !== +m[2] - 1 || d.getDate() !== +m[3]) return null;
+    d.setHours(0,0,0,0);
+    return d;
+  }
+  function daysUntil(dateStr){
+    var d = parseDate(dateStr);
+    if(!d) return null;
+    return Math.round((d - startOfToday()) / DAY);
+  }
+  // 생년월일: 6자리 / 8자리 / YYYY-MM-DD → YYYY-MM-DD
+  function normalizeBirth(raw){
+    var s = String(raw == null ? '' : raw).trim();
+    if(/^\d{4}-\d{1,2}-\d{1,2}$/.test(s)){
+      var p = s.split('-');
+      s = p[0] + pad2(+p[1]) + pad2(+p[2]);
+    }
+    var d = digits(s);
+    if(d.length === 8){
+      var iso = d.slice(0,4) + '-' + d.slice(4,6) + '-' + d.slice(6,8);
+      return parseDate(iso) ? iso : '';
+    }
+    if(d.length === 6){
+      var yy = parseInt(d.slice(0,2), 10);
+      var nowYY = new Date().getFullYear() % 100;
+      var yyyy = (yy <= nowYY) ? 2000 + yy : 1900 + yy;
+      var iso2 = yyyy + '-' + d.slice(2,4) + '-' + d.slice(4,6);
+      return parseDate(iso2) ? iso2 : '';
+    }
+    return '';
+  }
+  function ageOf(birth){
+    var d = parseDate(birth);
+    if(!d) return null;
+    var t = startOfToday();
+    var a = t.getFullYear() - d.getFullYear();
+    var m = t.getMonth() - d.getMonth();
+    if(m < 0 || (m === 0 && t.getDate() < d.getDate())) a--;
+    return a;
+  }
+  function formatPhone(v){
+    var d = digits(v);
+    if(d.length === 11) return d.slice(0,3) + '-' + d.slice(3,7) + '-' + d.slice(7);
+    if(d.length === 10) return d.slice(0,3) + '-' + d.slice(3,6) + '-' + d.slice(6);
+    if(d.length === 9) return d.slice(0,2) + '-' + d.slice(2,5) + '-' + d.slice(5);
+    if(d.length === 8) return d.slice(0,4) + '-' + d.slice(4);
+    if(d.length === 7) return d.slice(0,3) + '-' + d.slice(3);
+    return String(v == null ? '' : v).trim();
+  }
+
+  function monthlyTotal(c){
+    return (c.insurances || []).reduce(function(s, i){ return s + num(i.monthlyFee); }, 0);
+  }
+  function insuranceCount(){ return db.customers.reduce(function(s, c){ return s + (c.insurances || []).length; }, 0); }
+
+  // 이번 달/다음 달 납입일까지 남은 날
+  function payDateInMonth(y, m, day){
+    var last = new Date(y, m + 1, 0).getDate();
+    var d = new Date(y, m, Math.min(day, last));
+    d.setHours(0,0,0,0);
+    return d;
+  }
+  function nextPay(day){
+    var pd = parseInt(day, 10);
+    if(!pd || pd < 1 || pd > 31) return null;
+    var now = startOfToday();
+    var d = payDateInMonth(now.getFullYear(), now.getMonth(), pd);
+    if(d < now) d = payDateInMonth(now.getFullYear(), now.getMonth() + 1, pd);
+    return { date: d, days: Math.round((d - now) / DAY) };
+  }
+  function nearestPay(c){
+    var best = null;
+    (c.insurances || []).forEach(function(i){
+      var p = nextPay(i.payDay);
+      if(p && (!best || p.days < best.days)) best = p;
+    });
+    return best;
+  }
+  function nearestExpiry(c){
+    var best = null;
+    (c.insurances || []).forEach(function(i){
+      var dd = daysUntil(i.endDate);
+      if(dd == null) return;
+      if(!best || dd < best.days) best = { days: dd, endDate: i.endDate };
+    });
+    return best;
+  }
+
+  /* =========================================================
+     상태
+     ========================================================= */
+  var state = {
+    query: '',
+    filter: 'all',
+    sort: 'name',
+    selectMode: false,
+    selected: {}
+  };
+
+  var $ = function(sel, root){ return (root || document).querySelector(sel); };
+  var $$ = function(sel, root){ return Array.prototype.slice.call((root || document).querySelectorAll(sel)); };
+
+  /* =========================================================
+     정규화
+     ========================================================= */
+  function normalizeCustomer(raw){
+    var c = raw && typeof raw === 'object' ? raw : {};
+    var ins = Array.isArray(c.insurances) ? c.insurances : [];
+    return {
+      id: c.id || uid(),
+      name: String(c.name || '').trim(),
+      birth: normalizeBirth(c.birth || ''),
+      phone: String(c.phone || '').trim(),
+      address: String(c.address || '').trim(),
+      carNumber: String(c.carNumber || '').trim(),
+      memo: String(c.memo || '').trim(),
+      files: (Array.isArray(c.files) ? c.files : []).map(function(f){
+        f = f && typeof f === 'object' ? f : {};
+        return { id: String(f.id || uid()), name: String(f.name || '첨부파일'), type: String(f.type || ''), size: num(f.size) };
+      }),
+      sample: !!c.sample,
+      createdAt: c.createdAt || new Date().toISOString(),
+      updatedAt: c.updatedAt || c.createdAt || new Date().toISOString(),
+      insurances: ins.map(function(i){
+        i = i && typeof i === 'object' ? i : {};
+        return {
+          id: i.id || uid(),
+          company: String(i.company || '').trim(),
+          product: String(i.product || '').trim(),
+          startDate: parseDate(i.startDate) ? i.startDate : (normalizeBirth(i.startDate) || ''),
+          endDate: parseDate(i.endDate) ? i.endDate : (normalizeBirth(i.endDate) || ''),
+          monthlyFee: num(i.monthlyFee),
+          payDay: String(i.payDay || '').replace(/[^0-9]/g, '').slice(0,2)
+        };
+      })
+    };
+  }
+
+  /* =========================================================
+     필터 / 정렬
+     ========================================================= */
+  function haystack(c){
+    var parts = [c.name, c.phone, digits(c.phone), c.address, c.carNumber, digits(c.carNumber), c.memo, c.birth];
+    (c.insurances || []).forEach(function(i){ parts.push(i.company, i.product, i.startDate, i.endDate, i.payDay); });
+    (c.files || []).forEach(function(f){ parts.push(f.name); });
+    return parts.join(' ').toLowerCase();
+  }
+
+  function matchesFilter(c, filter){
+    if(filter === 'none') return (c.insurances || []).length === 0;
+    if(filter === 'pay'){
+      var p = nearestPay(c);
+      return !!(p && p.days <= 7);
+    }
+    if(filter === 'due'){
+      var e = nearestExpiry(c);
+      return !!(e && e.days >= 0 && e.days <= 90);
+    }
+    return true;
+  }
+
+  function customerList(query, filter, sort){
+    var q = String(query || '').trim().toLowerCase();
+    var qd = digits(q);
+    var qNumeric = /^[0-9\s-]+$/.test(q);
+    var arr = db.customers.filter(function(c){
+      if(!matchesFilter(c, filter)) return false;
+      if(!q) return true;
+      if(haystack(c).indexOf(q) !== -1) return true;
+      if(qNumeric && qd && (digits(c.phone).indexOf(qd) !== -1 ||
+                            digits(c.carNumber).indexOf(qd) !== -1 ||
+                            digits(c.birth).indexOf(qd) !== -1)) return true;
+      return false;
+    });
+    arr.sort(function(a, b){
+      if(sort === 'recent') return String(b.createdAt).localeCompare(String(a.createdAt));
+      if(sort === 'fee') return monthlyTotal(b) - monthlyTotal(a) || a.name.localeCompare(b.name, 'ko');
+      if(sort === 'due'){
+        var ea = nearestExpiry(a), eb = nearestExpiry(b);
+        var da = ea ? (ea.days < 0 ? -1e9 + ea.days : ea.days) : 1e12;
+        var dbv = eb ? (eb.days < 0 ? -1e9 + eb.days : eb.days) : 1e12;
+        return da - dbv || a.name.localeCompare(b.name, 'ko');
+      }
+      return a.name.localeCompare(b.name, 'ko');
+    });
+    return arr;
+  }
+
+  /* =========================================================
+     목록 렌더
+     ========================================================= */
+  function cardHTML(c){
+    var total = monthlyTotal(c);
+    var insCount = (c.insurances || []).length;
+    var age = ageOf(c.birth);
+    var pay = nearestPay(c);
+    var exp = nearestExpiry(c);
+    var badges = [];
+
+    if(insCount) badges.push('<span class="badge">보험 ' + insCount + '건</span>');
+    else badges.push('<span class="badge expired">보험 없음</span>');
+
+    if(pay){
+      var payLabel = '납입 ' + parseInt(pay.days, 10) + '일 후(' + (pay.date.getMonth() + 1) + '/' + pay.date.getDate() + ')';
+      if(pay.days === 0) payLabel = '오늘 납입';
+      badges.push('<span class="badge ' + (pay.days <= 3 ? 'soon' : 'pay') + '">' + payLabel + '</span>');
+    }
+    if(exp){
+      if(exp.days < 0) badges.push('<span class="badge expired">만기 지남</span>');
+      else if(exp.days <= 90) badges.push('<span class="badge soon">만기 D-' + exp.days + '</span>');
+    }
+    if((c.files || []).length) badges.push('<span class="badge">📎 ' + c.files.length + '</span>');
+    if(c.sample) badges.push('<span class="badge sample">샘플</span>');
+
+    var sel = !!state.selected[c.id];
+    var html = '';
+    html += '<article class="card' + (sel ? ' selected' : '') + '" data-id="' + esc(c.id) + '" tabindex="0" role="button" aria-label="' + esc(c.name) + ' 고객 상세 보기">';
+    html += '  <label class="card-check" aria-label="' + esc(c.name) + ' 선택">';
+    html += '    <input type="checkbox" ' + (sel ? 'checked' : '') + ' tabindex="-1">';
+    html += '  </label>';
+    html += '  <div class="card-main">';
+    html += '    <div class="card-top"><span class="cname">' + esc(c.name) + '</span>';
+    if(age !== null && age >= 0) html += '<span class="cage">만 ' + age + '세</span>';
+    html += '    </div>';
+    if(c.phone){
+      html += '    <a class="cphone" href="tel:' + esc(digits(c.phone)) + '" data-tel="1">📞 ' + esc(formatPhone(c.phone)) + '</a>';
+    }
+    if(c.address) html += '    <div class="cline"><span class="k">주소</span><span class="v">' + esc(c.address) + '</span></div>';
+    if(c.carNumber) html += '    <div class="cline"><span class="k">차량</span><span class="v">' + esc(c.carNumber) + '</span></div>';
+    if(c.memo) html += '    <div class="cline"><span class="k">비고</span><span class="v">' + esc(c.memo) + '</span></div>';
+    html += '    <div class="badges">' + badges.join('') + '</div>';
+    html += '  </div>';
+    html += '  <div class="card-right">';
+    html += total ? '<div class="cfee">' + total.toLocaleString('ko-KR') + '<span>원</span></div>' :
+                    '<div class="cfee zero">보험 없음</div>';
+    html += '    <div class="cins">월 보험료</div>';
+    html += '  </div>';
+    html += '</article>';
+    return html;
+  }
+
+  function emptyHTML(){
+    var hasQuery = !!state.query.trim() || state.filter !== 'all';
+    if(hasQuery){
+      return '<div class="empty">' +
+        '<div class="em-ico">🔍</div>' +
+        '<h2>조건에 맞는 고객이 없습니다</h2>' +
+        '<p>검색어를 줄이거나 필터를 ‘전체’로 바꿔 보세요.</p>' +
+        '<div class="row"><button class="btn outline" id="btnResetFilter">전체 보기</button></div>' +
+        '</div>';
+    }
+    return '<div class="empty">' +
+      '<div class="em-ico">📋</div>' +
+      '<h2>아직 등록된 고객이 없습니다</h2>' +
+      '<p>아래 ‘고객 추가’를 눌러 첫 고객을 등록해 보세요.<br>처음이시면 샘플 데이터로 사용법을 먼저 볼 수 있습니다.</p>' +
+      '<div class="row">' +
+      '<button class="btn primary" id="btnEmptyAdd">＋ 고객 추가</button>' +
+      '<button class="btn outline" id="btnEmptySample">샘플 데이터 넣기</button>' +
+      '</div></div>';
+  }
+
+  function render(){
+    var list = $('#list');
+    var items = customerList(state.query, state.filter, state.sort);
+    var html = '';
+
+    if(db.customers.some(function(c){ return c.sample; })){
+      html += '<div class="sample-note">연습용 샘플 고객이 포함되어 있습니다. <button type="button" id="btnRemoveSamples">샘플만 지우기</button></div>';
+    }
+    html += items.length ? items.map(cardHTML).join('') : emptyHTML();
+    list.innerHTML = html;
+
+    // 상단 요약
+    var total = items.reduce(function(s, c){ return s + monthlyTotal(c); }, 0);
+    var meta = $('#metatext');
+    var isFiltered = !!state.query.trim() || state.filter !== 'all';
+    meta.innerHTML = (isFiltered ? '검색 결과 <b>' + items.length + '명</b>' :
+                                  '전체 <b>' + db.customers.length + '명</b>') +
+      ' · 월 보험료 <b>' + total.toLocaleString('ko-KR') + '원</b>' +
+      (isFiltered ? ' <span style="opacity:.75">(전체 ' + db.customers.length + '명)</span>' : '');
+
+    $$('.chip').forEach(function(b){
+      b.setAttribute('aria-pressed', String(b.getAttribute('data-filter') === state.filter));
+    });
+
+    document.body.classList.toggle('select-mode', state.selectMode);
+    $('#bottombar').hidden = state.selectMode;
+    $('#selectbar').hidden = !state.selectMode;
+    var allSelected = items.length > 0 && items.every(function(c){ return state.selected[c.id]; });
+    $('#btnSelectAll').textContent = allSelected ? '전체 해제' : '전체 선택';
+    updateSelCount();
+  }
+
+  function updateSelCount(){
+    var n = Object.keys(state.selected).length;
+    $('#selCount').textContent = '(' + n + ')';
+    var btn = $('#btnPrintSelected');
+    btn.disabled = n === 0;
+  }
+
+  /* =========================================================
+     토스트 / 확인창
+     ========================================================= */
+  var toastTimer = null;
+  var toastAction = null;
+
+  function toast(msg, actionLabel, onAction){
+    var box = $('#toast');
+    $('#toastMsg').textContent = msg;
+    var act = $('#toastAction');
+    toastAction = onAction || null;
+    if(actionLabel && onAction){
+      act.hidden = false;
+      act.textContent = actionLabel;
+    }else{
+      act.hidden = true;
+      act.textContent = '';
+    }
+    box.hidden = false;
+    box.classList.toggle('above-modal', !$('#modal').hidden);
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ box.hidden = true; toastAction = null; }, onAction ? 8000 : 3200);
+  }
+  $('#toastAction').addEventListener('click', function(){
+    if(toastAction){
+      var fn = toastAction;
+      toastAction = null;
+      $('#toast').hidden = true;
+      fn();
+    }
+  });
+
+  function ask(opts){
+    return new Promise(function(resolve){
+      var back = $('#confirm');
+      $('#confirmTitle').textContent = opts.title || '확인';
+      $('#confirmMsg').textContent = opts.message || '';
+      var wrap = $('#confirmActions');
+      wrap.innerHTML = '';
+      var buttons = opts.buttons || [
+        { label: '취소', value: false, cls: 'outline' },
+        { label: opts.confirmLabel || '확인', value: true, cls: opts.danger ? 'danger' : 'primary' }
+      ];
+      var done = false;
+      buttons.forEach(function(b){
+        var el = document.createElement('button');
+        el.className = 'btn ' + (b.cls || 'outline');
+        el.textContent = b.label;
+        el.addEventListener('click', function(){
+          done = true;
+          back.hidden = true;
+          resolve(b.value);
+        });
+        wrap.appendChild(el);
+      });
+      back.hidden = false;
+      back.onclick = function(e){ if(e.target === back && !done){ back.hidden = true; resolve(false); } };
+    });
+  }
+
+  /* =========================================================
+     모달
+     ========================================================= */
+  var modalCloseHook = null;
+
+  function openModal(opts){
+    var m = $('#modal');
+    $('#modalTitle').textContent = opts.title || '';
+    $('#modalBody').innerHTML = opts.body || '';
+    var foot = $('#modalFoot');
+    if(opts.foot){
+      foot.innerHTML = opts.foot;
+      foot.hidden = false;
+    }else{
+      foot.innerHTML = '';
+      foot.hidden = true;
+    }
+    m.hidden = false;
+    document.body.style.overflow = 'hidden';
+    $('#modalBody').scrollTop = 0;
+    modalCloseHook = opts.onClose || null;
+    if(opts.after){ opts.after(); }
+  }
+
+  function closeModal(){
+    if(modalCloseHook){ var fn = modalCloseHook; modalCloseHook = null; fn(); }
+    $('#modal').hidden = true;
+    document.body.style.overflow = '';
+  }
+
+  $('#modalClose').addEventListener('click', closeModal);
+  document.addEventListener('keydown', function(e){
+    if(!$('#calc').hidden){
+      var k = e.key;
+      if(/^[0-9]$/.test(k)){ calcDigit(k); e.preventDefault(); return; }
+      if(k === '.' || k === ','){ calcDot(); e.preventDefault(); return; }
+      if(k === '+'){ calcApplyOp('+'); e.preventDefault(); return; }
+      if(k === '-'){ calcApplyOp('−'); e.preventDefault(); return; }
+      if(k === '*'){ calcApplyOp('×'); e.preventDefault(); return; }
+      if(k === '/'){ calcApplyOp('÷'); e.preventDefault(); return; }
+      if(k === '%'){ calcPercent(); e.preventDefault(); return; }
+      if(k === 'Enter' || k === '='){ calcEquals(); e.preventDefault(); return; }
+      if(k === 'Backspace'){ calcBack(); e.preventDefault(); return; }
+    }
+    if(e.key !== 'Escape') return;
+    if(!$('#lightbox').hidden){ closeLightbox(); return; }
+    if(!$('#calc').hidden){ closeCalc(); return; }
+    if(!$('#confirm').hidden){ $('#confirm').hidden = true; return; }
+    if(!$('#preview').hidden){ closePreview(); return; }
+    if(!$('#modal').hidden){ closeModal(); }
+  });
+
+  /* =========================================================
+     고객 카드 동작
+     ========================================================= */
+  var list = $('#list');
+
+  list.addEventListener('click', function(e){
+    var reset = e.target.closest('#btnResetFilter');
+    if(reset){ state.query = ''; state.filter = 'all'; $('#search').value = ''; $('#btnClearSearch').hidden = true; render(); return; }
+    if(e.target.closest('#btnEmptyAdd')){ openEditor(null); return; }
+    if(e.target.closest('#btnEmptySample')){ addSamples(); return; }
+    if(e.target.closest('#btnRemoveSamples')){ removeSamples(); return; }
+
+    if(e.target.closest('[data-tel]')) return; // 전화 걸기는 그대로
+
+    var card = e.target.closest('.card');
+    if(!card) return;
+    var id = card.getAttribute('data-id');
+    if(state.selectMode){
+      state.selected[id] = !state.selected[id];
+      if(!state.selected[id]) delete state.selected[id];
+      render();
+      return;
+    }
+    openDetail(id);
+  });
+
+  list.addEventListener('keydown', function(e){
+    if(e.key !== 'Enter' && e.key !== ' ') return;
+    var card = e.target.closest('.card');
+    if(!card) return;
+    e.preventDefault();
+    var id = card.getAttribute('data-id');
+    if(state.selectMode){
+      state.selected[id] = !state.selected[id];
+      if(!state.selected[id]) delete state.selected[id];
+      render();
+    }else{
+      openDetail(id);
+    }
+  });
+
+  /* =========================================================
+     검색 / 필터 / 정렬
+     ========================================================= */
+  var searchEl = $('#search');
+  var searchTimer = null;
+
+  searchEl.addEventListener('input', function(){
+    var v = searchEl.value;
+    $('#btnClearSearch').hidden = !v;
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(function(){
+      state.query = v;
+      render();
+    }, 120);
+  });
+  searchEl.addEventListener('keydown', function(e){
+    if(e.key === 'Enter'){ e.preventDefault(); searchEl.blur(); }
+  });
+  $('#btnClearSearch').addEventListener('click', function(){
+    clearTimeout(searchTimer);
+    searchEl.value = '';
+    state.query = '';
+    $('#btnClearSearch').hidden = true;
+    searchEl.focus();
+    render();
+  });
+
+  $('#chips').addEventListener('click', function(e){
+    var chip = e.target.closest('.chip');
+    if(!chip) return;
+    clearTimeout(searchTimer);
+    state.query = searchEl.value;
+    state.filter = chip.getAttribute('data-filter');
+    render();
+  });
+
+  $('#sort').addEventListener('change', function(){
+    state.sort = this.value;
+    render();
+  });
+
+  /* =========================================================
+     선택 모드
+     ========================================================= */
+  $('#btnSelectMode').addEventListener('click', function(){
+    state.selectMode = true;
+    state.selected = {};
+    render();
+    toast('인쇄할 고객을 눌러 선택하세요.');
+  });
+  $('#btnCancelSelect').addEventListener('click', function(){
+    state.selectMode = false;
+    state.selected = {};
+    render();
+  });
+  $('#btnSelectAll').addEventListener('click', function(){
+    var items = customerList(state.query, state.filter, state.sort);
+    var allSelected = items.length && items.every(function(c){ return state.selected[c.id]; });
+    state.selected = {};
+    if(!allSelected) items.forEach(function(c){ state.selected[c.id] = true; });
+    render();
+  });
+  $('#btnPrintSelected').addEventListener('click', function(){
+    var ids = Object.keys(state.selected);
+    if(!ids.length){ toast('인쇄할 고객을 먼저 선택해 주세요.'); return; }
+    var ordered = customerList(state.query, state.filter, state.sort).filter(function(c){ return state.selected[c.id]; });
+    var rest = db.customers.filter(function(c){ return state.selected[c.id] && ordered.indexOf(c) === -1; });
+    ordered = ordered.concat(rest);
+    openPrint(ordered, '선택 ' + ordered.length + '명');
+  });
+
+  $('#btnAdd').addEventListener('click', function(){ openEditor(null); });
+  $('#btnPrintAll').addEventListener('click', function(){
+    var items = customerList(state.query, state.filter, state.sort);
+    if(!items.length){ toast('인쇄할 고객이 없습니다.'); return; }
+    var isFiltered = !!state.query.trim() || state.filter !== 'all';
+    openPrint(items, (isFiltered ? '검색 결과 ' : '전체 ') + items.length + '명');
+  });
+
+  /* =========================================================
+     상세 보기
+     ========================================================= */
+  function infoRow(k, v, cls){
+    return '<div class="info-row"><span class="k">' + esc(k) + '</span><span class="v' + (v ? '' : ' empty-v') + '">' +
+      (v ? esc(v) : '미입력') + '</span></div>';
+  }
+
+  function insCardHTML(i){
+    var exp = daysUntil(i.endDate);
+    var metaBits = [];
+    metaBits.push('가입 ' + (i.startDate || '-'));
+    if(i.endDate){
+      var expTxt = '';
+      if(exp != null && exp < 0) expTxt = ' (만기됨)';
+      else if(exp != null && exp <= 365) expTxt = ' (D-' + exp + ')';
+      metaBits.push('만기 ' + i.endDate + expTxt);
+    }
+    if(i.payDay) metaBits.push('납입 매월 ' + parseInt(i.payDay, 10) + '일');
+    return '<div class="ins-card">' +
+      '<div class="itop"><span class="icomp">' + esc(i.company || '보험회사 미입력') + '</span>' +
+      '<span class="ifee">' + num(i.monthlyFee).toLocaleString('ko-KR') + '원</span></div>' +
+      (i.product ? '<div class="iprod">' + esc(i.product) + '</div>' : '') +
+      '<div class="imeta">' + metaBits.map(esc).join(' · ') + '</div>' +
+      '</div>';
+  }
+
+  function openDetail(id){
+    var c = db.customers.filter(function(x){ return x.id === id; })[0];
+    if(!c) return;
+    var age = ageOf(c.birth);
+    var total = monthlyTotal(c);
+    var ins = c.insurances || [];
+    var body = '';
+    body += '<div class="detail-top">';
+    body += '  <div class="dname">' + esc(c.name) +
+            (age !== null && age >= 0 ? '<span class="cage">만 ' + age + '세</span>' : '') +
+            (c.sample ? '<span class="badge sample">샘플</span>' : '') + '</div>';
+    if(c.phone){
+      body += '  <a class="call-btn" href="tel:' + esc(digits(c.phone)) + '">📞 ' + esc(formatPhone(c.phone)) + ' 전화 걸기</a>';
+    }
+    body += '</div>';
+    body += '<div class="info-card">';
+    body += infoRow('생년월일', c.birth ? c.birth + (age !== null ? ' (만 ' + age + '세)' : '') : '');
+    body += infoRow('휴대전화', c.phone ? formatPhone(c.phone) : '');
+    body += infoRow('주소', c.address);
+    body += infoRow('차량번호', c.carNumber);
+    body += infoRow('비고', c.memo);
+    body += '</div>';
+    body += '<div class="d-summary"><span>가입보험 ' + ins.length + '건' +
+            ((c.files || []).length ? ' · 첨부 ' + c.files.length + '개' : '') + '</span>' +
+            '<span>월 <b>' + total.toLocaleString('ko-KR') + '원</b></span></div>';
+    body += ins.length ? ins.map(insCardHTML).join('') :
+      '<div class="empty" style="margin:8px 0"><h2>가입보험이 없습니다</h2><p>수정에서 보험을 추가할 수 있습니다.</p></div>';
+    body += attachDetailHTML(c);
+
+    detailUrls.forEach(function(u){ try{ URL.revokeObjectURL(u); }catch(e){} });
+    detailUrls = [];
+
+    openModal({
+      title: c.name + ' 고객',
+      body: body,
+      foot: '<button class="btn outline" id="dPrint">이 고객 인쇄</button>' +
+            '<button class="btn danger" id="dDel">삭제</button>' +
+            '<button class="btn primary" id="dEdit">수정</button>',
+      onClose: function(){
+        detailUrls.forEach(function(u){ try{ URL.revokeObjectURL(u); }catch(e){} });
+        detailUrls = [];
+      },
+      after: function(){
+        loadDetailAttachments(c);
+        $('#dEdit').addEventListener('click', function(){ closeModal(); setTimeout(function(){ openEditor(id); }, 60); });
+        $('#dDel').addEventListener('click', function(){ askDelete(c); });
+        $('#dPrint').addEventListener('click', function(){ closeModal(); setTimeout(function(){ openPrint([c], c.name + ' 1명'); }, 60); });
+      }
+    });
+  }
+
+  /* =========================================================
+     고객 등록 / 수정
+     ========================================================= */
+  function insBlockHTML(i, idx){
+    i = i || {};
+    return '<div class="ins-block" data-ins-id="' + esc(i.id || uid()) + '">' +
+      '<div class="ins-head"><strong>보험 ' + idx + '</strong>' +
+      '<button type="button" class="link-danger" data-act="delIns">삭제</button></div>' +
+      '<label class="field"><span class="label">보험회사</span>' +
+      '<input data-f="company" list="insCompanies" value="' + esc(i.company || '') + '" placeholder="예) DB손해보험"></label>' +
+      '<label class="field"><span class="label">상품명</span>' +
+      '<input data-f="product" value="' + esc(i.product || '') + '" placeholder="예) 무배당 암보험"></label>' +
+      '<div class="field-row">' +
+      '<label class="field"><span class="label">가입일자</span><input type="date" data-f="startDate" value="' + esc(i.startDate || '') + '"></label>' +
+      '<label class="field"><span class="label">만기일자</span><input type="date" data-f="endDate" value="' + esc(i.endDate || '') + '"></label>' +
+      '</div>' +
+      '<div class="field-row">' +
+      '<label class="field"><span class="label">월보험료(원)</span><div class="fee-row">' +
+        '<input inputmode="numeric" data-f="monthlyFee" value="' +
+        (num(i.monthlyFee) ? num(i.monthlyFee).toLocaleString('ko-KR') : '') + '" placeholder="150,000">' +
+        '<button type="button" class="fee-calc" data-act="calc" aria-label="계산기 열기" title="계산기">🧮</button></div></label>' +
+      '<label class="field"><span class="label">납입일(매월)</span><input inputmode="numeric" data-f="payDay" value="' +
+        esc(i.payDay || '') + '" placeholder="20" maxlength="2"></label>' +
+      '</div>' +
+      '</div>';
+  }
+
+  function openEditor(id){
+    var c = id ? db.customers.filter(function(x){ return x.id === id; })[0] : null;
+    var editing = !!c;
+    var draft = c ? JSON.parse(JSON.stringify(c)) : {
+      name: '', birth: '', phone: '', address: '', carNumber: '', memo: '',
+      insurances: [{ id: uid() }], files: []
+    };
+    if(!draft.insurances || !draft.insurances.length) draft.insurances = [{ id: uid() }];
+    if(!Array.isArray(draft.files)) draft.files = [];
+
+    var body = '';
+    body += '<form id="custForm" novalidate autocomplete="off">';
+    body += '<div class="form-error" id="formError" hidden></div>';
+    body += '<div class="card-block">';
+    body += '<label class="field"><span class="label">고객이름 <span class="req">*</span></span>' +
+            '<input id="f_name" value="' + esc(draft.name) + '" placeholder="예) 홍길동" enterkeyhint="next"></label>';
+    body += '<div class="field-row">' +
+            '<label class="field"><span class="label">생년월일</span>' +
+            '<input id="f_birth" inputmode="numeric" value="' + esc(draft.birth) + '" placeholder="560907">' +
+            '<span class="hint">6자리 또는 8자리로 입력해도 됩니다.</span></label>' +
+            '<label class="field"><span class="label">휴대전화</span>' +
+            '<input id="f_phone" type="tel" inputmode="tel" value="' + esc(draft.phone) + '" placeholder="010-1234-5678">' +
+            '<span class="hint">저장하면 눌러서 전화할 수 있습니다.</span></label>' +
+            '</div>';
+    body += '<label class="field"><span class="label">주소</span>' +
+            '<input id="f_address" value="' + esc(draft.address) + '" placeholder="예) 부산 사하구 당리동"></label>';
+    body += '<label class="field"><span class="label">차량번호</span>' +
+            '<input id="f_car" value="' + esc(draft.carNumber) + '" placeholder="예) 12가 3456"></label>';
+    body += '<label class="field" style="margin-bottom:2px"><span class="label">비고</span>' +
+            '<textarea id="f_memo" rows="2" placeholder="상담 메모, 특이사항">' + esc(draft.memo) + '</textarea></label>';
+    body += '</div>';
+
+    body += '<div class="section-head"><h3>가입보험</h3>' +
+            '<button type="button" class="btn small outline" id="btnAddIns">＋ 보험 추가</button></div>';
+    body += '<div id="insWrap">' + draft.insurances.map(function(i, k){ return insBlockHTML(i, k + 1); }).join('') + '</div>';
+    body += '<div class="ins-total"><span>이 고객 월보험료 합계</span><b id="insTotal">0원</b></div>';
+    body += '<p class="form-note">보험을 2건 이상이면 ‘＋ 보험 추가’로 계속 넣으실 수 있습니다. 모두 입력하지 않아도 저장됩니다.</p>';
+
+    body += '<div class="section-head"><h3>첨부 파일 <span style="font-weight:700;color:var(--muted);font-size:14px">청약서 · 신분증 · 영수증 · 증권</span></h3></div>';
+    body += '<div class="card-block" style="padding:12px">';
+    body += '  <div class="att-btns">' +
+            '    <button type="button" class="btn small outline" id="btnAddFiles">＋ 사진·PDF</button>' +
+            '    <button type="button" class="btn small outline" id="btnCamera">📷 카메라 촬영</button>' +
+            '  </div>';
+    body += '  <div class="att-list" id="attList"></div>';
+    body += '  <p class="form-note" style="margin:8px 0 0">사진은 긴 변 1600px · JPEG로 자동으로 줄여 저장하고, PDF는 그대로 둡니다. 파일은 이 기기에만 보관됩니다.</p>';
+    body += '</div>';
+    body += '</form>';
+
+    openModal({
+      title: editing ? '고객 수정' : '고객 추가',
+      body: body,
+      foot: '<button class="btn outline" id="fCancel">취소</button>' +
+            '<button class="btn primary" id="fSave">' + (editing ? '수정 저장' : '저장') + '</button>',
+      onClose: function(){
+        attEditorUrls.forEach(function(u){ try{ URL.revokeObjectURL(u); }catch(e){} });
+        attEditorUrls = [];
+      },
+      after: function(){
+        var wrap = $('#insWrap');
+        var birth = $('#f_birth');
+        var phone = $('#f_phone');
+
+        /* ---------- 첨부 파일 ---------- */
+        var keepFiles = (draft.files || []).map(function(f){ return { id: f.id, name: f.name, type: f.type, size: f.size }; });
+        var newFiles = [];
+        var removedFiles = [];
+        attEditorUrls.forEach(function(u){ URL.revokeObjectURL(u); });
+        attEditorUrls = [];
+
+        function renderAttList(){
+          var box = $('#attList');
+          if(!box) return;
+          var html = '';
+          keepFiles.forEach(function(f){
+            if(removedFiles.indexOf(f.id) !== -1) return;
+            html += '<div class="att-item">' +
+              (isImageFile(f)
+                ? '<button type="button" class="att-thumb" data-kthumb="' + esc(f.id) + '" data-preview-keep="' + esc(f.id) + '" aria-label="사진 크게 보기">🖼</button>'
+                : '<span class="att-thumb" data-kthumb="' + esc(f.id) + '">📄</span>') +
+              '<span class="att-main"><span class="att-name">' + esc(f.name) + '</span>' +
+              '<span class="att-size">' + (isImageFile(f) ? '사진' : 'PDF') + ' · ' + esc(fileSizeText(f.size)) + '</span></span>' +
+              '<button type="button" class="att-del" data-del-keep="' + esc(f.id) + '" aria-label="첨부 삭제">✕</button></div>';
+          });
+          newFiles.forEach(function(f, k){
+            html += '<div class="att-item">' +
+              (f.url
+                ? '<button type="button" class="att-thumb" data-preview-new="' + k + '" aria-label="사진 크게 보기"><img src="' + f.url + '" alt=""></button>'
+                : '<span class="att-thumb">📄</span>') +
+              '<span class="att-main"><span class="att-name">' + esc(f.name) + '</span>' +
+              '<span class="att-size">' + (isImageFile(f) ? '사진' : 'PDF') + ' · ' + esc(fileSizeText(f.size)) + ' · 추가 예정</span></span>' +
+              '<button type="button" class="att-del" data-del-new="' + k + '" aria-label="첨부 취소">✕</button></div>';
+          });
+          if(!html) html = '<p class="att-empty">아직 붙인 사진·PDF가 없습니다. 위 버튼으로 붙일 수 있습니다.</p>';
+          box.innerHTML = html;
+          keepFiles.forEach(function(f){
+            if(removedFiles.indexOf(f.id) !== -1 || !isImageFile(f)) return;
+            idbGet(f.id).then(function(rec){
+              if(!rec || !rec.blob) return;
+              var el = $('#attList').querySelector('[data-kthumb="' + f.id + '"]');
+              if(!el) return;
+              var u = URL.createObjectURL(rec.blob);
+              attEditorUrls.push(u);
+              el.innerHTML = '<img src="' + u + '" alt="">';
+            }).catch(function(){});
+          });
+        }
+
+        function addPicked(files){
+          if(!files || !files.length) return;
+          var hasImg = files.some(function(f){ return isImageFile(f); });
+          if(hasImg) toast('사진을 줄이는 중…');
+          prepareAttachments(files, function(items){
+            items.forEach(function(it){
+              var url = String(it.type || '').indexOf('image/') === 0 ? URL.createObjectURL(it.blob) : '';
+              if(url) attEditorUrls.push(url);
+              newFiles.push({ id: uid(), name: it.name, type: it.type, size: it.size, blob: it.blob, url: url });
+            });
+            renderAttList();
+            toast(items.length + '개를 붙였습니다. 저장을 눌러야 보관됩니다.');
+          }, function(skip){
+            toast('사진·PDF가 아니거나 25MB가 넘는 파일 ' + skip + '개는 넣지 않았습니다.');
+          });
+        }
+
+        function makePicker(accept, multiple, camera){
+          var inp = document.createElement('input');
+          inp.type = 'file';
+          inp.accept = accept;
+          inp.multiple = !!multiple;
+          if(camera) inp.setAttribute('capture', 'environment');
+          inp.className = 'att-input';
+          inp.style.display = 'none';
+          inp.addEventListener('change', function(){
+            var picked = Array.prototype.slice.call(inp.files || []);
+            inp.value = '';
+            addPicked(picked);
+          });
+          return inp;
+        }
+        var pickFiles = makePicker('image/*,application/pdf', true, false);
+        var pickCamera = makePicker('image/*', false, true);
+        $('#modalBody').appendChild(pickFiles);
+        $('#modalBody').appendChild(pickCamera);
+
+        $('#btnAddFiles').addEventListener('click', function(){ pickFiles.click(); });
+        $('#btnCamera').addEventListener('click', function(){ pickCamera.click(); });
+
+        $('#attList').addEventListener('click', function(e){
+          var pk = e.target.closest('[data-preview-keep]');
+          if(pk){
+            var kf = keepFiles.filter(function(f){ return f.id === pk.getAttribute('data-preview-keep'); })[0];
+            openLightbox(pk.getAttribute('data-preview-keep'), kf ? kf.name : '사진');
+            return;
+          }
+          var pn = e.target.closest('[data-preview-new]');
+          if(pn){
+            var nf = newFiles[parseInt(pn.getAttribute('data-preview-new'), 10)];
+            if(nf && nf.url) showLightbox(nf.url, nf.name, nf.name, false);
+            return;
+          }
+          var dk = e.target.closest('[data-del-keep]');
+          if(dk){ removedFiles.push(dk.getAttribute('data-del-keep')); renderAttList(); return; }
+          var dn = e.target.closest('[data-del-new]');
+          if(dn){
+            var k = parseInt(dn.getAttribute('data-del-new'), 10);
+            var f = newFiles[k];
+            if(f && f.url) URL.revokeObjectURL(f.url);
+            newFiles.splice(k, 1);
+            renderAttList();
+          }
+        });
+
+        renderAttList();
+
+        function renumber(){
+          $$('.ins-block', wrap).forEach(function(b, k){ $('strong', b).textContent = '보험 ' + (k + 1); });
+          updateTotal();
+        }
+        function updateTotal(){
+          var t = 0;
+          $$('[data-f="monthlyFee"]', wrap).forEach(function(inp){ t += num(inp.value); });
+          $('#insTotal').textContent = t.toLocaleString('ko-KR') + '원';
+        }
+
+        function addInsBlock(data){
+          var div = document.createElement('div');
+          div.innerHTML = insBlockHTML(data || {}, $$('.ins-block', wrap).length + 1);
+          wrap.appendChild(div.firstChild);
+          renumber();
+          var inputs = $$('.ins-block', wrap).pop().querySelectorAll('input');
+          if(inputs.length) inputs[0].focus();
+        }
+
+        $('#btnAddIns').addEventListener('click', function(){ addInsBlock(); });
+
+        wrap.addEventListener('click', function(e){
+          var cb = e.target.closest('[data-act="calc"]');
+          if(cb){
+            var blk = cb.closest('.ins-block');
+            var fee = blk ? blk.querySelector('[data-f="monthlyFee"]') : null;
+            openCalc(fee);
+            return;
+          }
+          var del = e.target.closest('[data-act="delIns"]');
+          if(!del) return;
+          var blocks = $$('.ins-block', wrap);
+          if(blocks.length <= 1){
+            // 마지막 한 건은 비우기만 (실수로 다 지우지 않게)
+            var b = blocks[0];
+            $$('input', b).forEach(function(inp){ inp.value = ''; });
+            updateTotal();
+            toast('보험 칸을 비웠습니다. 보험이 없으면 그대로 저장하셔도 됩니다.');
+            return;
+          }
+          del.closest('.ins-block').remove();
+          renumber();
+        });
+
+        wrap.addEventListener('input', function(e){
+          if(e.target.matches('[data-f="monthlyFee"]')){
+            var d = num(e.target.value);
+            e.target.value = d ? d.toLocaleString('ko-KR') : '';
+            updateTotal();
+          }
+          if(e.target.matches('[data-f="payDay"]')){
+            e.target.value = e.target.value.replace(/[^0-9]/g, '').slice(0,2);
+          }
+        });
+
+        wrap.addEventListener('focusout', function(e){
+          if(e.target.matches('[data-f="payDay"]')){
+            var v = parseInt(e.target.value, 10);
+            if(!isNaN(v)) e.target.value = String(Math.min(31, Math.max(1, v)));
+          }
+        });
+
+        // 생년월일 자동 변환
+        birth.addEventListener('blur', function(){
+          var n = normalizeBirth(birth.value);
+          if(n) birth.value = n;
+        });
+        birth.addEventListener('input', function(){ $('#f_birth').closest('.field').classList.remove('bad'); });
+        // 전화번호 자동 하이픈
+        phone.addEventListener('blur', function(){
+          if(digits(phone.value).length >= 9) phone.value = formatPhone(phone.value);
+        });
+
+        updateTotal();
+
+        function doSave(){
+          var err = $('#formError');
+          err.hidden = true;
+          var name = $('#f_name').value.trim();
+          if(!name){
+            err.textContent = '고객이름을 입력해 주세요.';
+            err.hidden = false;
+            $('#f_name').closest('.field').classList.add('bad');
+            $('#f_name').focus();
+            return;
+          }
+          var birthVal = $('#f_birth').value.trim();
+          var birthIso = birthVal ? normalizeBirth(birthVal) : '';
+          if(birthVal && !birthIso){
+            err.textContent = '생년월일을 확인해 주세요. 예) 560907 또는 1956-09-07';
+            err.hidden = false;
+            $('#f_birth').closest('.field').classList.add('bad');
+            $('#f_birth').focus();
+            return;
+          }
+          var ins = $$('.ins-block', wrap).map(function(b){
+            function val(f){ var el = b.querySelector('[data-f="' + f + '"]'); return el ? el.value.trim() : ''; }
+            return {
+              id: b.getAttribute('data-ins-id') || uid(),
+              company: val('company'),
+              product: val('product'),
+              startDate: val('startDate'),
+              endDate: val('endDate'),
+              monthlyFee: num(val('monthlyFee')),
+              payDay: val('payDay').replace(/[^0-9]/g, '')
+            };
+          }).filter(function(i){ return i.company || i.product || i.monthlyFee || i.startDate || i.endDate || i.payDay; });
+
+          var keep = keepFiles.filter(function(f){ return removedFiles.indexOf(f.id) === -1; });
+          var payload = {
+            id: editing ? c.id : uid(),
+            name: name,
+            birth: birthIso,
+            phone: $('#f_phone').value.trim(),
+            address: $('#f_address').value.trim(),
+            carNumber: $('#f_car').value.trim(),
+            memo: $('#f_memo').value.trim(),
+            sample: editing ? !!c.sample : false,
+            createdAt: editing ? c.createdAt : new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            insurances: ins,
+            files: keep.concat(newFiles.map(function(f){
+              return { id: f.id, name: f.name, type: f.type, size: f.size };
+            }))
+          };
+
+          function persist(){
+            if(editing){
+              var idx = db.customers.findIndex(function(x){ return x.id === c.id; });
+              if(idx >= 0) db.customers[idx] = payload;
+            }else{
+              db.customers.push(payload);
+            }
+            save();
+            closeModal();
+            render();
+            toast(editing ? '수정했습니다.' : '고객을 추가했습니다.');
+            if(editing) setTimeout(function(){ openDetail(payload.id); }, 180);
+          }
+
+          var saveBtn = $('#fSave');
+          saveBtn.disabled = true;
+          var ops = [];
+          if(removedFiles.length) ops.push(idbDelete(removedFiles));
+          if(newFiles.length) ops.push(idbPutAll(newFiles.map(function(f){
+            return {
+              id: f.id, customerId: payload.id, name: f.name, type: f.type, size: f.size,
+              addedAt: new Date().toISOString(), blob: f.blob
+            };
+          })));
+          Promise.all(ops).then(persist).catch(function(err){
+            console.warn('첨부 파일 저장 실패', err);
+            if(newFiles.length){
+              saveBtn.disabled = false;
+              toast('첨부 파일을 저장하지 못했습니다. 사진·PDF를 빼고 다시 저장해 주세요.');
+              return;
+            }
+            persist();
+          });
+        }
+
+        $('#fSave').addEventListener('click', doSave);
+        $('#fCancel').addEventListener('click', closeModal);
+        $('#custForm').addEventListener('submit', function(e){ e.preventDefault(); doSave(); });
+      }
+    });
+  }
+
+  /* =========================================================
+     삭제
+     ========================================================= */
+  function askDelete(c){
+    ask({
+      title: '고객을 삭제할까요?',
+      message: c.name + ' 고객과 가입보험 ' + (c.insurances || []).length + '건이 삭제됩니다.\n삭제 후 화면 아래 ‘되돌리기’로 복구할 수 있습니다.',
+      confirmLabel: '삭제',
+      danger: true
+    }).then(function(ok){
+      if(!ok) return;
+      var snap = JSON.parse(JSON.stringify(db.customers));
+      db.customers = db.customers.filter(function(x){ return x.id !== c.id; });
+      delete state.selected[c.id];
+      save();
+      closeModal();
+      render();
+      toast(c.name + ' 고객을 삭제했습니다.', '되돌리기', function(){
+        db.customers = snap;
+        save();
+        render();
+        toast('삭제를 취소했습니다.');
+      });
+    });
+  }
+
+  /* =========================================================
+     인쇄 미리보기
+     ========================================================= */
+  var printPull = [];   // 현재 미리보기의 고객 목록
+  var printLabel = '';
+  var printPhotos = false;   // 첨부 사진을 인쇄에 포함할지
+  var printUrls = [];
+
+  function sheetHTML(customers){
+    var now = new Date();
+    var stamp = now.getFullYear() + '-' + pad2(now.getMonth() + 1) + '-' + pad2(now.getDate()) +
+                ' ' + pad2(now.getHours()) + ':' + pad2(now.getMinutes());
+    var totalFee = customers.reduce(function(s, c){ return s + monthlyTotal(c); }, 0);
+    var totalIns = customers.reduce(function(s, c){ return s + (c.insurances || []).length; }, 0);
+
+    var h = '';
+    h += '<div class="sheet-head">';
+    h += '  <h1>용우고객관리대장</h1>';
+    h += '  <div class="sheet-meta">';
+    h += '    <div>출력일시 ' + esc(stamp) + '</div>';
+    h += '    <div>총 <b>' + customers.length + '</b>명 · 보험 <b>' + totalIns + '</b>건</div>';
+    h += '    <div>총 월보험료 <b>' + totalFee.toLocaleString('ko-KR') + '원</b></div>';
+    h += '  </div>';
+    h += '</div>';
+
+    customers.forEach(function(c, idx){
+      var age = ageOf(c.birth);
+      var ins = c.insurances || [];
+      h += '<section class="p-cust">';
+      h += '  <div class="p-cust-head">';
+      h += '    <span class="p-idx">' + (idx + 1) + '</span>';
+      h += '    <span class="p-name">' + esc(c.name) + '</span>';
+      if(c.birth) h += '<span class="p-sub">' + esc(c.birth) + (age !== null && age >= 0 ? ' (만 ' + age + '세)' : '') + '</span>';
+      if(c.phone) h += '<span class="p-sub">☎ ' + esc(formatPhone(c.phone)) + '</span>';
+      h += '  </div>';
+      h += '  <div class="p-info">';
+      if(c.address) h += '<span><b>주소</b>' + esc(c.address) + '</span>';
+      if(c.carNumber) h += '<span><b>차량</b>' + esc(c.carNumber) + '</span>';
+      if(c.memo) h += '<span><b>비고</b>' + esc(c.memo) + '</span>';
+      var cFiles = c.files || [];
+      if(cFiles.length){
+        var cImg = cFiles.filter(isImageFile).length;
+        var cPdf = cFiles.length - cImg;
+        h += '<span><b>첨부</b>' + cFiles.length + '개' +
+             (cImg ? ' (사진 ' + cImg : ' (') + (cPdf ? (cImg ? ' · PDF ' : 'PDF ') + cPdf : '') + ')' +
+             '</span>';
+      }
+      h += '  </div>';
+      if(ins.length){
+        h += '<table class="p-table">';
+        h += '<colgroup><col style="width:16%"><col style="width:30%"><col style="width:13%"><col style="width:13%"><col style="width:15%"><col style="width:13%"></colgroup>';
+        h += '<thead><tr><th>보험회사</th><th>상품명</th><th>가입일자</th><th>만기일자</th><th>월보험료</th><th>납입일</th></tr></thead><tbody>';
+        ins.forEach(function(i){
+          h += '<tr>';
+          h += '<td>' + esc(i.company || '-') + '</td>';
+          h += '<td>' + esc(i.product || '-') + '</td>';
+          h += '<td class="c">' + esc(i.startDate || '-') + '</td>';
+          h += '<td class="c">' + esc(i.endDate || '-') + '</td>';
+          h += '<td class="num">' + num(i.monthlyFee).toLocaleString('ko-KR') + '</td>';
+          h += '<td class="c">' + (i.payDay ? '매월 ' + parseInt(i.payDay, 10) + '일' : '-') + '</td>';
+          h += '</tr>';
+        });
+        h += '</tbody><tfoot><tr><td colspan="4">월 합계</td><td class="num">' +
+             monthlyTotal(c).toLocaleString('ko-KR') + '</td><td></td></tr></tfoot></table>';
+      }else{
+        h += '<div class="p-none">가입보험 없음</div>';
+      }
+      if(printPhotos){
+        var cImgs = (c.files || []).filter(isImageFile);
+        if(cImgs.length){
+          h += '<div class="p-attach">' + cImgs.map(function(f){
+            return '<figure><img data-att-img="' + esc(f.id) + '" alt=""><figcaption>' + esc(f.name) + '</figcaption></figure>';
+          }).join('') + '</div>';
+        }
+      }
+      h += '</section>';
+    });
+
+    h += '<div class="sheet-foot"><span>용우고객관리대장 · ' + customers.length + '명</span><span>' + esc(printLabel) + '</span></div>';
+    return h;
+  }
+
+  function fitSheet(){
+    var scroll = $('#previewScroll');
+    var holder = $('#sheetHolder');
+    var sheet = $('#sheet');
+    sheet.style.transform = 'none';
+    holder.style.width = '';
+    holder.style.height = '';
+    var avail = Math.max(200, scroll.clientWidth - 20);
+    var s = Math.min(1, avail / 794);
+    sheet.style.transform = s < 1 ? 'scale(' + s + ')' : 'none';
+    holder.style.width = (794 * s) + 'px';
+    holder.style.height = (sheet.offsetHeight * s) + 'px';
+  }
+
+  function printNoteUpdate(){
+    var imgCount = printPull.reduce(function(s, c){ return s + (c.files || []).filter(isImageFile).length; }, 0);
+    var chk = $('#chkPrintPhotos');
+    chk.disabled = !imgCount;
+    $('#ptChkWrap').classList.toggle('disabled', !imgCount);
+    if(!imgCount){ chk.checked = false; printPhotos = false; }
+    $('#ptAttachNote').textContent = imgCount
+      ? ('첨부 사진 ' + imgCount + '장' + (printPhotos ? ' · 인쇄에 포함' : ''))
+      : '첨부 사진 없음';
+  }
+
+  function loadPrintPhotos(){
+    if(!printPhotos) return;
+    $$('#sheet [data-att-img]').forEach(function(img){
+      var id = img.getAttribute('data-att-img');
+      idbGet(id).then(function(rec){
+        if(!rec || !rec.blob){
+          var fig = img.closest('figure');
+          if(fig) fig.remove();
+          return;
+        }
+        var u = URL.createObjectURL(rec.blob);
+        printUrls.push(u);
+        img.src = u;
+      }).catch(function(){});
+    });
+  }
+
+  function reprintSheet(){
+    printUrls.forEach(function(u){ try{ URL.revokeObjectURL(u); }catch(e){} });
+    printUrls = [];
+    $('#sheet').innerHTML = sheetHTML(printPull);
+    $('#previewMeta').textContent = printLabel + ' · 월 ' +
+      printPull.reduce(function(s, c){ return s + monthlyTotal(c); }, 0).toLocaleString('ko-KR') + '원';
+    requestAnimationFrame(fitSheet);
+    printNoteUpdate();
+    loadPrintPhotos();
+  }
+
+  function openPrint(customers, label){
+    if(!customers || !customers.length){ toast('인쇄할 고객이 없습니다.'); return; }
+    $('#toast').hidden = true;
+    printPull = customers.slice();
+    printLabel = label || (customers.length + '명');
+    $('#preview').hidden = false;
+    document.body.style.overflow = 'hidden';
+    $('#previewScroll').scrollTop = 0;
+    reprintSheet();
+  }
+
+  function closePreview(){
+    $('#preview').hidden = true;
+    document.body.style.overflow = '';
+    printUrls.forEach(function(u){ try{ URL.revokeObjectURL(u); }catch(e){} });
+    printUrls = [];
+  }
+
+  $('#chkPrintPhotos').addEventListener('change', function(){
+    printPhotos = this.checked;
+    reprintSheet();
+  });
+
+  $('#btnPreviewClose').addEventListener('click', closePreview);
+  $('#btnDoPrint').addEventListener('click', function(){
+    var prev = document.title;
+    var d = new Date();
+    document.title = '용우고객관리대장_' + d.getFullYear() + pad2(d.getMonth() + 1) + pad2(d.getDate());
+    try{ window.print(); }catch(e){ toast('이 브라우저에서는 인쇄를 열 수 없습니다.'); }
+    setTimeout(function(){ document.title = prev; }, 1500);
+  });
+  window.addEventListener('resize', function(){ if(!$('#preview').hidden) fitSheet(); });
+
+  /* =========================================================
+     첨부 파일 (IndexedDB) — 사진·PDF
+     ========================================================= */
+  var FILE_DB = 'customerLedgerFiles';
+  var FILE_STORE = 'files';
+  var FILE_MAX = 25 * 1024 * 1024;   // 파일 하나 최대 25MB
+  var IMG_MAX = 1600;                // 사진 긴 변 최대 1600px
+  var IMG_QUALITY = 0.8;             // JPEG 품질 0.80
+  var IMG_KEEP_BYTES = 500 * 1024;   // 이보다 작고 해상도도 낮으면 원본 그대로
+  var fileDbPromise = null;
+  var detailUrls = [];
+  var attEditorUrls = [];
+  var lbUrl = null;
+  var lbOwned = false;
+
+  function openFileDb(){
+    if(!('indexedDB' in window)) return Promise.reject(new Error('no-indexeddb'));
+    if(fileDbPromise) return fileDbPromise;
+    fileDbPromise = new Promise(function(resolve, reject){
+      var req = indexedDB.open(FILE_DB, 1);
+      req.onupgradeneeded = function(){
+        var d = req.result;
+        if(!d.objectStoreNames.contains(FILE_STORE)){
+          var st = d.createObjectStore(FILE_STORE, { keyPath: 'id' });
+          st.createIndex('customerId', 'customerId', { unique: false });
+        }
+      };
+      req.onsuccess = function(){ resolve(req.result); };
+      req.onerror = function(){ reject(req.error); };
+    });
+    return fileDbPromise;
+  }
+
+  function idbPutAll(records){
+    return openFileDb().then(function(d){
+      return new Promise(function(resolve, reject){
+        var tx = d.transaction(FILE_STORE, 'readwrite');
+        var st = tx.objectStore(FILE_STORE);
+        records.forEach(function(r){ st.put(r); });
+        tx.oncomplete = function(){ resolve(true); };
+        tx.onerror = function(){ reject(tx.error); };
+        tx.onabort = function(){ reject(tx.error); };
+      });
+    });
+  }
+
+  function idbDelete(ids){
+    if(!ids || !ids.length) return Promise.resolve(true);
+    return openFileDb().then(function(d){
+      return new Promise(function(resolve, reject){
+        var tx = d.transaction(FILE_STORE, 'readwrite');
+        var st = tx.objectStore(FILE_STORE);
+        ids.forEach(function(id){ st.delete(id); });
+        tx.oncomplete = function(){ resolve(true); };
+        tx.onerror = function(){ reject(tx.error); };
+      });
+    });
+  }
+
+  function idbGet(id){
+    return openFileDb().then(function(d){
+      return new Promise(function(resolve, reject){
+        var tx = d.transaction(FILE_STORE, 'readonly');
+        var r = tx.objectStore(FILE_STORE).get(id);
+        r.onsuccess = function(){ resolve(r.result || null); };
+        r.onerror = function(){ reject(r.error); };
+      });
+    });
+  }
+
+  function idbList(customerId){
+    return openFileDb().then(function(d){
+      return new Promise(function(resolve, reject){
+        var tx = d.transaction(FILE_STORE, 'readonly');
+        var st = tx.objectStore(FILE_STORE);
+        var out = [];
+        var req = customerId ? st.index('customerId').openCursor(IDBKeyRange.only(customerId)) : st.openCursor();
+        req.onsuccess = function(){
+          var cur = req.result;
+          if(cur){ out.push(cur.value); cur.continue(); }
+          else resolve(out);
+        };
+        req.onerror = function(){ reject(req.error); };
+      });
+    });
+  }
+
+  function isImageFile(f){
+    if(!f) return false;
+    if(String(f.type || '').toLowerCase().indexOf('image/') === 0) return true;
+    return /\.(png|jpe?g|gif|webp|bmp|heic|heif)$/i.test(String(f.name || ''));
+  }
+  function isPdfFile(f){
+    if(!f) return false;
+    if(String(f.type || '').toLowerCase() === 'application/pdf') return true;
+    return /\.pdf$/i.test(String(f.name || ''));
+  }
+  function fileSizeText(bytes){
+    var b = Number(bytes) || 0;
+    if(b < 1024) return b + 'B';
+    if(b < 1024 * 1024) return Math.round(b / 1024) + 'KB';
+    return (Math.round(b / 1024 / 1024 * 10) / 10) + 'MB';
+  }
+  function jpgName(name){
+    var s = String(name || '사진');
+    if(/\.(jpe?g)$/i.test(s)) return s;
+    return s.replace(/\.[^.\/]+$/, '') + '.jpg';
+  }
+
+  // 카메라·갤러리 사진을 긴 변 1600px / JPEG 0.8 로 줄입니다. 이미 작고 가벼우면 원본 그대로.
+  function compressImage(file){
+    return new Promise(function(resolve){
+      var url = URL.createObjectURL(file);
+      var img = new Image();
+      var done = function(res){ URL.revokeObjectURL(url); resolve(res); };
+      img.onload = function(){
+        try{
+          var w = img.naturalWidth || img.width;
+          var h = img.naturalHeight || img.height;
+          if(!w || !h){ done(null); return; }
+          var scale = Math.min(1, IMG_MAX / Math.max(w, h));
+          if(scale === 1 && file.size <= IMG_KEEP_BYTES){ done(null); return; }
+          var tw = Math.max(1, Math.round(w * scale));
+          var th = Math.max(1, Math.round(h * scale));
+          var cv = document.createElement('canvas');
+          cv.width = tw; cv.height = th;
+          var ctx = cv.getContext('2d');
+          ctx.fillStyle = '#fff';
+          ctx.fillRect(0, 0, tw, th);
+          ctx.drawImage(img, 0, 0, tw, th);
+          cv.toBlob(function(blob){
+            if(!blob || (scale === 1 && blob.size >= file.size)){ done(null); return; }
+            done({ blob: blob, width: tw, height: th, resized: scale < 1 });
+          }, 'image/jpeg', IMG_QUALITY);
+        }catch(e){ done(null); }
+      };
+      img.onerror = function(){ done(null); };
+      img.src = url;
+    });
+  }
+
+  // 고른 파일들을 저장용 묶음으로 바꿉니다 (사진은 압축, PDF는 그대로)
+  function prepareAttachments(fileList, onReady, onSkip){
+    var list = Array.prototype.slice.call(fileList || []);
+    if(!list.length) return;
+    var jobs = list.map(function(file){
+      if(isPdfFile(file)){
+        if(file.size > FILE_MAX) return Promise.resolve(null);
+        return Promise.resolve({ name: file.name || '문서.pdf', type: 'application/pdf', size: file.size, blob: file });
+      }
+      if(!isImageFile(file) || file.size > FILE_MAX) return Promise.resolve(null);
+      return compressImage(file).then(function(res){
+        if(!res) return { name: file.name || '사진', type: file.type || 'image/*', size: file.size, blob: file };
+        return { name: jpgName(file.name), type: 'image/jpeg', size: res.blob.size, blob: res.blob };
+      });
+    });
+    Promise.all(jobs).then(function(items){
+      var ok = items.filter(Boolean);
+      if(ok.length) onReady(ok);
+      if(ok.length < items.length && onSkip) onSkip(items.length - ok.length);
+    });
+  }
+
+  function findFileById(fileId){
+    var found = null;
+    db.customers.forEach(function(c){
+      (c.files || []).forEach(function(f){ if(f.id === fileId) found = { c: c, f: f }; });
+    });
+    return found;
+  }
+
+  function attachDetailHTML(c){
+    var files = c.files || [];
+    if(!files.length) return '';
+    var h = '<div class="att-card"><div class="att-head">📎 첨부 파일 <b>' + files.length + '개</b>' +
+            '<span class="att-note">사진은 눌러서 크게 보기</span></div><div class="att-list">';
+    files.forEach(function(f){
+      var img = isImageFile(f);
+      h += '<div class="att-item" data-file-row="' + esc(f.id) + '">' +
+        '<span class="att-thumb" data-thumb="' + esc(f.id) + '">' + (img ? '🖼' : '📄') + '</span>' +
+        '<span class="att-main"><span class="att-name">' + esc(f.name) + '</span>' +
+        '<span class="att-size" data-fsize>(' + (img ? '사진' : 'PDF') + ') ' + esc(fileSizeText(f.size)) + '</span></span>' +
+        (img
+          ? '<button type="button" class="att-act" data-open-file="' + esc(f.id) + '">크게</button>'
+          : '<a class="att-act" data-pdf="' + esc(f.id) + '" href="#" target="_blank" rel="noopener">열기</a>' +
+            '<a class="att-act" data-save-file="' + esc(f.id) + '" href="#" download>저장</a>') +
+        '<button type="button" class="att-del" data-del-file="' + esc(f.id) + '" aria-label="첨부 삭제">✕</button>' +
+        '</div>';
+    });
+    h += '</div></div>';
+    return h;
+  }
+
+  function loadDetailAttachments(c){
+    (c.files || []).forEach(function(f){
+      idbGet(f.id).then(function(rec){
+        var row = $('#modalBody').querySelector('[data-file-row="' + f.id + '"]');
+        if(!rec || !rec.blob){
+          if(row){
+            var sz = row.querySelector('[data-fsize]');
+            if(sz) sz.textContent = '파일 없음 (이 기기에 보관되어 있지 않음)';
+          }
+          return;
+        }
+        var url = URL.createObjectURL(rec.blob);
+        detailUrls.push(url);
+        if(!row) return;
+        if(isImageFile(f)){
+          var th = row.querySelector('[data-thumb]');
+          if(th) th.innerHTML = '<img src="' + url + '" alt="">';
+        }
+        var pdf = row.querySelector('[data-pdf]');
+        if(pdf) pdf.href = url;
+        var sv = row.querySelector('[data-save-file]');
+        if(sv){ sv.href = url; sv.setAttribute('download', f.name); }
+      }).catch(function(){});
+    });
+  }
+
+  function showLightbox(url, name, downloadName, owned){
+    if(lbUrl && lbOwned) URL.revokeObjectURL(lbUrl);
+    lbUrl = url;
+    lbOwned = !!owned;
+    $('#lbImg').src = url;
+    $('#lbTitle').textContent = name || '사진';
+    var save = $('#lbSave');
+    save.href = url;
+    save.setAttribute('download', downloadName || name || '사진.jpg');
+    $('#lightbox').hidden = false;
+  }
+
+  function openLightbox(fileId, name){
+    idbGet(fileId).then(function(rec){
+      if(!rec || !rec.blob){ toast('사진 파일을 찾지 못했습니다.'); return; }
+      showLightbox(URL.createObjectURL(rec.blob), name || rec.name || '사진', rec.name || name, true);
+    }).catch(function(){ toast('사진을 열지 못했습니다.'); });
+  }
+
+  function closeLightbox(){
+    $('#lightbox').hidden = true;
+    $('#lbImg').removeAttribute('src');
+    if(lbUrl && lbOwned) URL.revokeObjectURL(lbUrl);
+    lbUrl = null;
+    lbOwned = false;
+  }
+
+  function deleteAttachment(fileId){
+    var hit = findFileById(fileId);
+    if(!hit) return;
+    ask({
+      title: '첨부 파일을 지울까요?',
+      message: hit.f.name + ' 파일을 이 기기에서 지웁니다.',
+      confirmLabel: '삭제',
+      danger: true
+    }).then(function(ok){
+      if(!ok) return;
+      hit.c.files = (hit.c.files || []).filter(function(y){ return y.id !== fileId; });
+      hit.c.updatedAt = new Date().toISOString();
+      idbDelete([fileId]).catch(function(){});
+      save();
+      render();
+      closeModal();
+      setTimeout(function(){ openDetail(hit.c.id); }, 60);
+    });
+  }
+
+  $('#modalBody').addEventListener('click', function(e){
+    var del = e.target.closest('[data-del-file]');
+    if(del){ deleteAttachment(del.getAttribute('data-del-file')); return; }
+    var open = e.target.closest('[data-open-file]');
+    if(open){
+      var hit = findFileById(open.getAttribute('data-open-file'));
+      openLightbox(open.getAttribute('data-open-file'), hit ? hit.f.name : '');
+      return;
+    }
+    var pdf = e.target.closest('[data-pdf]');
+    if(pdf && (!pdf.getAttribute('href') || pdf.getAttribute('href') === '#')){
+      e.preventDefault();
+      toast('파일을 준비하는 중입니다. 잠시 뒤 다시 눌러 주세요.');
+      return;
+    }
+    var sv = e.target.closest('[data-save-file]');
+    if(sv && (!sv.getAttribute('href') || sv.getAttribute('href') === '#')){
+      e.preventDefault();
+      toast('파일을 준비하는 중입니다. 잠시 뒤 다시 눌러 주세요.');
+    }
+  });
+
+  $('#lbClose').addEventListener('click', closeLightbox);
+  $('#lightbox').addEventListener('click', function(e){ if(e.target === $('#lightbox')) closeLightbox(); });
+
+  /* =========================================================
+     계산기
+     ========================================================= */
+  var calcTarget = null;
+  var calc = { acc: null, op: null, entry: '', done: false, lastExpr: '' };
+
+  function calcGroup(v){
+    var s = String(v);
+    var neg = s.charAt(0) === '-';
+    if(neg) s = s.slice(1);
+    var p = s.split('.');
+    p[0] = p[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    return (neg ? '-' : '') + p.join('.');
+  }
+  function calcFmt(v){
+    if(v == null || !isFinite(v)) return '0';
+    var r = Math.round(v * 1e10) / 1e10;
+    return calcGroup(r);
+  }
+  function calcEntryDisp(){
+    if(!calc.entry) return '';
+    var p = calc.entry.split('.');
+    p[0] = p[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    return p.join('.');
+  }
+  function calcCompute(a, op, b){
+    a = Number(a) || 0; b = Number(b) || 0;
+    var r = 0;
+    if(op === '+') r = a + b;
+    else if(op === '−') r = a - b;
+    else if(op === '×') r = a * b;
+    else if(op === '÷'){
+      if(!b){ toast('0으로는 나눌 수 없습니다.'); return null; }
+      r = a / b;
+    }else{ r = b; }
+    return Math.round(r * 1e10) / 1e10;
+  }
+  function resolveCalcTarget(){
+    if(calcTarget && document.body.contains(calcTarget)) return calcTarget;
+    var form = document.getElementById('custForm');
+    if(form){
+      var fees = form.querySelectorAll('[data-f="monthlyFee"]');
+      if(fees.length) return fees[0];
+    }
+    return null;
+  }
+  function calcRender(){
+    var expr = '', out = '0';
+    if(calc.op != null){
+      expr = calcFmt(calc.acc) + ' ' + calc.op;
+      out = calc.entry ? calcEntryDisp() : calcFmt(calc.acc);
+    }else if(calc.done){
+      expr = calc.lastExpr;
+      out = calcFmt(calc.acc);
+    }else{
+      out = calc.entry ? calcEntryDisp() : '0';
+    }
+    $('#calcExpr').textContent = expr;
+    $('#calcOut').textContent = out;
+    var target = resolveCalcTarget();
+    var btn = $('#calcApply');
+    btn.disabled = !target;
+    var hint = $('#calcHint');
+    if(target){
+      var blk = target.closest('.ins-block');
+      var label = blk ? (blk.querySelector('strong') ? blk.querySelector('strong').textContent.trim() : '선택한 보험') : '월보험료';
+      hint.textContent = label + '의 월보험료 칸에 들어갑니다.';
+    }else{
+      hint.textContent = '고객 추가·수정 화면의 월보험료 옆 🧮 로 열면 결과가 바로 들어갑니다.';
+    }
+    hint.classList.toggle('on', !!target);
+  }
+  function calcAllClear(){ calc.acc = null; calc.op = null; calc.entry = ''; calc.done = false; calc.lastExpr = ''; }
+  function calcReset(){ calcAllClear(); calcRender(); }
+  function calcDigit(d){
+    if(calc.done){ calcAllClear(); }
+    if(calc.entry.replace(/[^0-9]/g, '').length >= 12) return;
+    if(calc.entry === '0') calc.entry = d;
+    else calc.entry += d;
+    if(calc.entry === '') calc.entry = '0';
+    calcRender();
+  }
+  function calcDot(){
+    if(calc.done) calcAllClear();
+    if(!calc.entry) calc.entry = '0.';
+    else if(calc.entry.indexOf('.') === -1) calc.entry += '.';
+    calcRender();
+  }
+  function calcBack(){
+    if(calc.done) return;
+    calc.entry = calc.entry.slice(0, -1);
+    calcRender();
+  }
+  function calcPercent(){
+    if(calc.entry) calc.entry = String(Math.round((Number(calc.entry) / 100) * 1e10) / 1e10);
+    else if(calc.acc != null) calc.acc = Math.round((calc.acc / 100) * 1e10) / 1e10;
+    calcRender();
+  }
+  function calcApplyOp(o){
+    var v = calc.entry ? Number(calc.entry) : (calc.acc == null ? 0 : calc.acc);
+    if(calc.op != null){
+      var r = calcCompute(calc.acc, calc.op, v);
+      if(r === null) return;
+      calc.acc = r;
+    }else{
+      calc.acc = v;
+    }
+    calc.op = o;
+    calc.entry = '';
+    calc.done = false;
+    calc.lastExpr = '';
+    calcRender();
+  }
+  function calcEquals(){
+    if(calc.op == null){
+      if(calc.entry){
+        calc.acc = Number(calc.entry);
+        calc.entry = '';
+        calc.done = true;
+        calc.lastExpr = calcFmt(calc.acc) + ' =';
+      }
+      calcRender();
+      return;
+    }
+    var b = calc.entry ? Number(calc.entry) : (calc.acc == null ? 0 : calc.acc);
+    var r = calcCompute(calc.acc, calc.op, b);
+    if(r === null) return;
+    calc.lastExpr = calcFmt(calc.acc) + ' ' + calc.op + ' ' + calcFmt(b) + ' =';
+    calc.acc = r;
+    calc.op = null;
+    calc.entry = '';
+    calc.done = true;
+    calcRender();
+  }
+  function calcCurrentValue(){
+    if(calc.op != null) return calc.entry ? Number(calc.entry) : (calc.acc == null ? 0 : calc.acc);
+    if(calc.done) return calc.acc == null ? 0 : calc.acc;
+    return calc.entry ? Number(calc.entry) : 0;
+  }
+  function openCalc(target){
+    if(target) calcTarget = target;
+    $('#calc').hidden = false;
+    calcAllClear();
+    if(document.activeElement && document.activeElement.blur) document.activeElement.blur();
+    calcRender();
+  }
+  function closeCalc(){
+    $('#calc').hidden = true;
+    calcAllClear();
+  }
+  function calcApplyValue(){
+    var target = resolveCalcTarget();
+    var v = calcCurrentValue();
+    if(!isFinite(v)) v = 0;
+    var n = Math.round(v);
+    if(n < 0) n = 0;
+    if(!target){
+      toast('먼저 고객 추가·수정 화면의 월보험료 칸 옆 🧮 를 눌러 주세요.');
+      return;
+    }
+    target.value = n ? n.toLocaleString('ko-KR') : '0';
+    target.dispatchEvent(new Event('input', { bubbles: true }));
+    closeCalc();
+    toast(n.toLocaleString('ko-KR') + '원을 월보험료에 넣었습니다.');
+  }
+
+  $('#calcPad').addEventListener('click', function(e){
+    var b = e.target.closest('[data-k]');
+    if(!b) return;
+    var k = b.getAttribute('data-k');
+    if(k === 'C') calcReset();
+    else if(k === '%') calcPercent();
+    else if(k === 'back') calcBack();
+    else if(k === '=') calcEquals();
+    else if(k === '+' || k === '−' || k === '×' || k === '÷') calcApplyOp(k);
+    else if(k === '.') calcDot();
+    else if(k === '00'){ calcDigit('0'); calcDigit('0'); }
+    else calcDigit(k);
+  });
+  $('#btnCalc').addEventListener('click', function(){ openCalc(null); });
+  $('#calcClose').addEventListener('click', closeCalc);
+  $('#calcCancel').addEventListener('click', closeCalc);
+  $('#calcApply').addEventListener('click', calcApplyValue);
+  $('#calc').addEventListener('click', function(e){ if(e.target === $('#calc')) closeCalc(); });
+
+  // 월보험료 칸을 누르면 그 칸이 계산기 목표가 됩니다.
+  document.addEventListener('focusin', function(e){
+    var t = e.target;
+    if(t && t.matches && t.matches('[data-f="monthlyFee"]')) calcTarget = t;
+  });
+
+  /* =========================================================
+     백업 / 복원
+     ========================================================= */
+  function stampName(){
+    var d = new Date();
+    return d.getFullYear() + pad2(d.getMonth() + 1) + pad2(d.getDate()) + '_' + pad2(d.getHours()) + pad2(d.getMinutes());
+  }
+  function download(blob, filename){
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function(){ URL.revokeObjectURL(url); a.remove(); }, 1200);
+  }
+
+  function exportJSON(){
+    if(!db.customers.length){ toast('내보낼 고객이 없습니다.'); return; }
+    var data = {
+      app: 'customer-ledger',
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      count: db.customers.length,
+      customers: db.customers
+    };
+    download(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }), '용우고객관리대장_백업_' + stampName() + '.json');
+    toast(db.customers.length + '명을 JSON 파일로 저장했습니다.');
+  }
+
+  // CSV 한 줄 = 보험 한 건 (보험 없는 고객은 빈 칸으로 한 줄)
+  function csvRows(){
+    var cols = ['고객이름','생년월일','휴대전화','주소','차량번호','비고','보험회사','상품명','가입일자','만기일자','월보험료','납입일'];
+    var rows = [cols];
+    db.customers.forEach(function(c){
+      var base = [c.name, c.birth, formatPhone(c.phone), c.address, c.carNumber, c.memo];
+      var ins = (c.insurances || []);
+      if(!ins.length){
+        rows.push(base.concat(['','','','','','']));
+      }else{
+        ins.forEach(function(i){
+          rows.push(base.concat([i.company, i.product, i.startDate, i.endDate, num(i.monthlyFee), i.payDay]));
+        });
+      }
+    });
+    return rows;
+  }
+  function csvBlob(){
+    function q(v){ var s = String(v == null ? '' : v); return '"' + s.replace(/"/g, '""') + '"'; }
+    var text = csvRows().map(function(r){ return r.map(q).join(','); }).join('\r\n');
+    return new Blob(['\uFEFF' + text], { type: 'text/csv;charset=utf-8' });
+  }
+
+  function exportCSV(){
+    if(!db.customers.length){ toast('내보낼 고객이 없습니다.'); return; }
+    download(csvBlob(), '용우고객관리대장_' + stampName() + '.csv');
+    toast('엑셀용 CSV 파일로 저장했습니다.');
+  }
+
+  function exportGoogleCSV(){
+    if(!db.customers.length){ toast('내보낼 고객이 없습니다.'); return; }
+    download(csvBlob(), '용우고객관리대장_구글시트용_' + ymd(new Date()) + '.csv');
+    guideGoogleSheet();
+  }
+
+  function guideGoogleSheet(){
+    openModal({
+      title: '구글 시트에서 열기',
+      body: '<div class="card-block">' +
+        '<p class="form-note" style="margin:0 0 8px">방금 받은 <b>구글시트용 CSV</b> 파일을 구글 시트에서 여는 방법입니다. 한글이 깨지지 않게 UTF-8(BOM) 형식으로 저장했습니다.</p>' +
+        '<div style="font-size:15.5px;line-height:1.8">' +
+        '① 크롬에서 <b>drive.google.com</b> 을 엽니다.<br>' +
+        '② 오른쪽 위 <b>＋ 새로 만들기 → 파일 업로드</b>로 받은 CSV를 올립니다.<br>' +
+        '③ 올린 파일을 길게 눌러 <b>연결 프로그램 → Google 스프레드시트</b>를 고릅니다.<br>' +
+        '④ 새 시트에서 열리면 <b>파일 → 다른 이름으로 저장</b>으로 스프레드시트로 저장합니다.' +
+        '</div>' +
+        '<p class="form-note" style="margin-top:12px">휴대폰에서는 <b>드라이브 앱</b>에서 같은 방법으로 열 수 있습니다. 열었을 때 글자가 깨져 보이면 둘째 줄(파일 → 가져오기)에서 <b>UTF-8</b>을 고르세요.</p>' +
+        '</div>',
+      foot: '<button class="btn primary" id="sgOk">확인</button>',
+      after: function(){ $('#sgOk').addEventListener('click', closeModal); }
+    });
+  }
+
+  /* =========================================================
+     엑셀(.xlsx) 만들기 — 외부 라이브러리 없이 ZIP(Store) 방식
+     ========================================================= */
+  var XLSX_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+  var CRC_TABLE = (function(){
+    var t = new Uint32Array(256);
+    for(var n = 0; n < 256; n++){
+      var c = n;
+      for(var k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+      t[n] = c >>> 0;
+    }
+    return t;
+  })();
+
+  function crc32(bytes){
+    var c = 0xFFFFFFFF;
+    for(var i = 0; i < bytes.length; i++) c = CRC_TABLE[(c ^ bytes[i]) & 0xFF] ^ (c >>> 8);
+    return (c ^ 0xFFFFFFFF) >>> 0;
+  }
+  function u16(n){ return new Uint8Array([n & 255, (n >>> 8) & 255]); }
+  function u32(n){ return new Uint8Array([n & 255, (n >>> 8) & 255, (n >>> 16) & 255, (n >>> 24) & 255]); }
+  function joinBytes(list){
+    var len = 0;
+    list.forEach(function(b){ len += b.length; });
+    var out = new Uint8Array(len);
+    var at = 0;
+    list.forEach(function(b){ out.set(b, at); at += b.length; });
+    return out;
+  }
+
+  function zipStore(entries){
+    var enc = new TextEncoder();
+    var now = new Date();
+    var dosTime = ((now.getHours() & 31) << 11) | ((now.getMinutes() & 63) << 5) | ((now.getSeconds() >> 1) & 31);
+    var dosDate = (((now.getFullYear() - 1980) & 127) << 9) | (((now.getMonth() + 1) & 15) << 5) | (now.getDate() & 31);
+    var locals = [], centrals = [], offset = 0;
+    entries.forEach(function(e){
+      var name = enc.encode(e.name);
+      var data = typeof e.data === 'string' ? enc.encode(e.data) : e.data;
+      var crc = crc32(data);
+      var lh = joinBytes([
+        u32(0x04034b50), u16(20), u16(0x0800), u16(0), u16(dosTime), u16(dosDate),
+        u32(crc), u32(data.length), u32(data.length), u16(name.length), u16(0), name, data
+      ]);
+      locals.push(lh);
+      centrals.push(joinBytes([
+        u32(0x02014b50), u16(20), u16(20), u16(0x0800), u16(0), u16(dosTime), u16(dosDate),
+        u32(crc), u32(data.length), u32(data.length), u16(name.length), u16(0), u16(0), u16(0), u16(0),
+        u32(0), u32(offset), name
+      ]));
+      offset += lh.length;
+    });
+    var central = joinBytes(centrals);
+    var eocd = joinBytes([
+      u32(0x06054b50), u16(0), u16(0), u16(entries.length), u16(entries.length),
+      u32(central.length), u32(offset), u16(0)
+    ]);
+    return locals.concat([central, eocd]);
+  }
+
+  function colLetter(n){
+    var s = '';
+    while(n > 0){
+      var m = (n - 1) % 26;
+      s = String.fromCharCode(65 + m) + s;
+      n = Math.floor((n - 1) / 26);
+    }
+    return s;
+  }
+  function xmlEsc(v){
+    return String(v == null ? '' : v).replace(/[&<>"']/g, function(m){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[m];
+    }).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '');
+  }
+  function cellXML(ref, cell, header){
+    var isMoney = cell && typeof cell === 'object' && cell.m;
+    var style = header ? ' s="1"' : (isMoney ? ' s="2"' : '');
+    var v = (cell && typeof cell === 'object') ? cell.v : cell;
+    if(v === null || v === undefined || v === '') return '<c r="' + ref + '"' + style + '/>';
+    if(typeof v === 'number' && isFinite(v)) return '<c r="' + ref + '"' + style + '><v>' + v + '</v></c>';
+    return '<c r="' + ref + '"' + style + ' t="inlineStr"><is><t xml:space="preserve">' + xmlEsc(v) + '</t></is></c>';
+  }
+  function worksheetXML(rows, widths){
+    var cols = '';
+    if(widths && widths.length){
+      cols = '<cols>' + widths.map(function(w, i){
+        return '<col min="' + (i + 1) + '" max="' + (i + 1) + '" width="' + w + '" customWidth="1"/>';
+      }).join('') + '</cols>';
+    }
+    var body = rows.map(function(row, r){
+      return '<row r="' + (r + 1) + '">' + row.map(function(v, c){
+        return cellXML(colLetter(c + 1) + (r + 1), v, r === 0);
+      }).join('') + '</row>';
+    }).join('');
+    return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n' +
+      '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
+      '<sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>' +
+      '<sheetFormatPr defaultRowHeight="16"/>' + cols + '<sheetData>' + body + '</sheetData></worksheet>';
+  }
+
+  function xlsxSheets(){
+    var sorted = db.customers.slice().sort(function(a, b){ return String(a.name).localeCompare(String(b.name), 'ko'); });
+    var cust = [['번호','고객이름','생년월일','나이','휴대전화','주소','차량번호','비고','가입보험(건)','월보험료 합계(원)','첨부파일(개)']];
+    var insr = [['번호','고객이름','휴대전화','보험회사','상품명','가입일자','만기일자','월보험료(원)','납입일']];
+    var n = 0;
+    sorted.forEach(function(c, k){
+      var age = ageOf(c.birth);
+      cust.push([
+        k + 1, c.name, c.birth || '', (age !== null && age >= 0) ? age : '',
+        formatPhone(c.phone), c.address, c.carNumber, c.memo,
+        (c.insurances || []).length, { v: monthlyTotal(c), m: 1 }, (c.files || []).length
+      ]);
+      (c.insurances || []).forEach(function(i){
+        n++;
+        insr.push([
+          n, c.name, formatPhone(c.phone), i.company, i.product, i.startDate || '', i.endDate || '',
+          { v: num(i.monthlyFee), m: 1 }, i.payDay ? '매월 ' + parseInt(i.payDay, 10) + '일' : ''
+        ]);
+      });
+    });
+    return { customers: cust, insurances: insr };
+  }
+
+  function xlsxBlob(){
+    var s = xlsxSheets();
+    var nowIso = new Date().toISOString().replace(/\.\d+Z$/, 'Z');
+    var CT = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n' +
+      '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
+      '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
+      '<Default Extension="xml" ContentType="application/xml"/>' +
+      '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>' +
+      '<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>' +
+      '<Override PartName="/xl/worksheets/sheet2.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>' +
+      '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>' +
+      '<Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/>' +
+      '<Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/>' +
+      '</Types>';
+    var RELS = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n' +
+      '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+      '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>' +
+      '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/>' +
+      '<Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties" Target="docProps/app.xml"/>' +
+      '</Relationships>';
+    var CORE = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n' +
+      '<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">' +
+      '<dc:title>용우고객관리대장</dc:title><dc:creator>용우고객관리대장</dc:creator>' +
+      '<dcterms:created xsi:type="dcterms:W3CDTF">' + nowIso + '</dcterms:created>' +
+      '<dcterms:modified xsi:type="dcterms:W3CDTF">' + nowIso + '</dcterms:modified>' +
+      '</cp:coreProperties>';
+    var APP = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n' +
+      '<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties" xmlns:vt="http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes">' +
+      '<Application>용우고객관리대장</Application></Properties>';
+    var WB = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n' +
+      '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">' +
+      '<bookViews><workbookView xWindow="0" yWindow="0" windowWidth="16000" windowHeight="9000"/></bookViews>' +
+      '<sheets><sheet name="고객목록" sheetId="1" r:id="rId1"/><sheet name="가입보험" sheetId="2" r:id="rId2"/></sheets>' +
+      '</workbook>';
+    var WBRELS = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n' +
+      '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+      '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>' +
+      '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet2.xml"/>' +
+      '<Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>' +
+      '</Relationships>';
+    var STYLES = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n' +
+      '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
+      '<numFmts count="1"><numFmt numFmtId="164" formatCode="#,##0"/></numFmts>' +
+      '<fonts count="2">' +
+      '<font><sz val="11"/><name val="맑은 고딕"/><family val="2"/></font>' +
+      '<font><b/><sz val="11"/><name val="맑은 고딕"/><family val="2"/></font>' +
+      '</fonts>' +
+      '<fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill>' +
+      '<fill><patternFill patternType="solid"><fgColor rgb="FFE7EFFB"/><bgColor indexed="64"/></patternFill></fill></fills>' +
+      '<borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>' +
+      '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>' +
+      '<cellXfs count="3">' +
+      '<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>' +
+      '<xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1"/>' +
+      '<xf numFmtId="164" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/>' +
+      '</cellXfs>' +
+      '<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>' +
+      '</styleSheet>';
+    var entries = [
+      { name: '[Content_Types].xml', data: CT },
+      { name: '_rels/.rels', data: RELS },
+      { name: 'docProps/core.xml', data: CORE },
+      { name: 'docProps/app.xml', data: APP },
+      { name: 'xl/workbook.xml', data: WB },
+      { name: 'xl/_rels/workbook.xml.rels', data: WBRELS },
+      { name: 'xl/styles.xml', data: STYLES },
+      { name: 'xl/worksheets/sheet1.xml', data: worksheetXML(s.customers, [5, 12, 12, 6, 15, 26, 12, 24, 10, 15, 10]) },
+      { name: 'xl/worksheets/sheet2.xml', data: worksheetXML(s.insurances, [5, 12, 15, 16, 30, 12, 12, 14, 10]) }
+    ];
+    return new Blob(zipStore(entries), { type: XLSX_MIME });
+  }
+
+  function exportXLSX(){
+    if(!db.customers.length){ toast('내보낼 고객이 없습니다.'); return; }
+    try{
+      download(xlsxBlob(), '용우고객관리대장_' + ymd(new Date()) + '.xlsx');
+      toast('엑셀 파일(.xlsx)로 저장했습니다.');
+    }catch(e){
+      console.warn('엑셀 파일 만들기 실패', e);
+      toast('엑셀 파일을 만들지 못했습니다. CSV로 내보내 주세요.');
+    }
+  }
+
+  function importJSON(file){
+    var reader = new FileReader();
+    reader.onload = function(){
+      var data;
+      try{
+        data = JSON.parse(String(reader.result));
+      }catch(e){
+        toast('파일을 읽지 못했습니다. 용우고객관리대장에서 내보낸 JSON 파일인지 확인해 주세요.');
+        return;
+      }
+      var list = Array.isArray(data) ? data : (data && Array.isArray(data.customers) ? data.customers : null);
+      if(!list){
+        toast('이 파일에서는 고객 자료를 찾지 못했습니다.');
+        return;
+      }
+      var cleaned = list.map(normalizeCustomer).filter(function(c){ return c.name; });
+      if(!cleaned.length){ toast('가져올 고객이 없습니다.'); return; }
+
+      ask({
+        title: '백업을 불러올까요?',
+        message: '파일에 고객 ' + cleaned.length + '명이 있습니다.\n현재 이 기기에는 ' + db.customers.length + '명이 저장되어 있습니다.',
+        buttons: [
+          { label: '취소', value: 'cancel', cls: 'outline' },
+          { label: '추가로 합치기', value: 'merge', cls: 'primary' },
+          { label: '전부 바꾸기', value: 'replace', cls: 'ghost-danger' }
+        ]
+      }).then(function(mode){
+        if(mode === 'cancel' || !mode) return;
+        var snap = JSON.parse(JSON.stringify(db.customers));
+        if(mode === 'merge'){
+          cleaned.forEach(function(c){
+            var same = db.customers.filter(function(x){
+              return x.name === c.name && digits(x.phone) === digits(c.phone) && x.birth === c.birth;
+            })[0];
+            if(same){
+              same.insurances = same.insurances.concat(c.insurances);
+              same.updatedAt = new Date().toISOString();
+            }else{
+              c.id = uid();
+              db.customers.push(c);
+            }
+          });
+        }else{
+          db.customers = cleaned;
+        }
+        state.selected = {};
+        save();
+        closeModal();
+        render();
+        toast((mode === 'merge' ? '추가로 합쳤습니다' : '전부 바꿨습니다') + ' (' + db.customers.length + '명)', '되돌리기', function(){
+          db.customers = snap;
+          save();
+          render();
+          toast('불러오기를 취소했습니다.');
+        });
+      });
+    };
+    reader.onerror = function(){ toast('파일을 읽지 못했습니다.'); };
+    reader.readAsText(file);
+  }
+
+  /* =========================================================
+     샘플 / 초기화
+     ========================================================= */
+  function sampleCustomers(){
+    return [
+      {
+        name: '김영수', birth: '1958-02-14', phone: '010-1234-5678',
+        address: '부산 사하구 당리동 123-4', carNumber: '45나 1234',
+        memo: '보험료 카드결재 매월 25일', sample: true,
+        insurances: [
+          { company: '흥국생명', product: '무배당 실손의료비보험', startDate: '2020-06-01', endDate: '2045-06-01', monthlyFee: 38500, payDay: '26' }
+        ]
+      },
+      {
+        name: '이정숙', birth: '1956-09-07', phone: '010-2345-6789',
+        address: '부산 부산진구 전포대로 275', carNumber: '12가 3456',
+        memo: '지인 소개 · 오후에 연락이 편함', sample: true,
+        insurances: [
+          { company: 'DB손해보험', product: "New I'm OK 암보험 (20년 갱신)", startDate: '2024-03-12', endDate: '2044-03-12', monthlyFee: 152000, payDay: '20' },
+          { company: '메리츠화재', product: '또받는 간편암 355', startDate: '2025-01-05', endDate: '2045-01-05', monthlyFee: 88000, payDay: '5' }
+        ]
+      },
+      {
+        name: '박명자', birth: '1971-11-02', phone: '010-3456-7890',
+        address: '부산 해운대구 좌동 1450', carNumber: '07다 8899',
+        memo: '남편 보험도 같이 상담', sample: true,
+        insurances: [
+          { company: '현대해상', product: '무배당 간편한 355 암보험', startDate: '2023-08-21', endDate: '2043-08-21', monthlyFee: 96400, payDay: '21' },
+          { company: 'KB손해보험', product: '운전자보험 (교통사고 처리지원금)', startDate: '2022-04-04', endDate: '2042-04-04', monthlyFee: 12000, payDay: '8' }
+        ]
+      },
+      {
+        name: '최동수', birth: '1965-04-21', phone: '010-4567-8901',
+        address: '부산 북구 화명동 2100', carNumber: '',
+        memo: '만기 3개월 전에 다시 연락', sample: true,
+        insurances: [
+          { company: 'NH농협손해보험', product: '무배당 NH농협 실손의료비보험', startDate: '2021-01-15', endDate: '2046-01-15', monthlyFee: 42700, payDay: '17' }
+        ]
+      }
+    ].map(normalizeCustomer);
+  }
+
+  function addSamples(){
+    var samples = sampleCustomers().filter(function(s){
+      return !db.customers.some(function(c){ return c.name === s.name && c.birth === s.birth; });
+    });
+    if(!samples.length){ toast('샘플 데이터가 이미 들어 있습니다.'); return; }
+    samples.forEach(function(s){ s.id = uid(); db.customers.push(s); });
+    save();
+    render();
+    toast('샘플 고객 ' + samples.length + '명을 넣었습니다. 실제 고객은 따로 등록하세요.');
+  }
+
+  function removeSamples(){
+    ask({
+      title: '샘플 고객을 지울까요?',
+      message: '연습용 샘플 고객만 지웁니다. 직접 등록하신 고객은 그대로 남습니다.',
+      confirmLabel: '샘플 지우기',
+      danger: false
+    }).then(function(ok){
+      if(!ok) return;
+      var snap = JSON.parse(JSON.stringify(db.customers));
+      db.customers = db.customers.filter(function(c){ return !c.sample; });
+      save();
+      render();
+      toast('샘플 고객을 지웠습니다.', '되돌리기', function(){
+        db.customers = snap; save(); render(); toast('되돌렸습니다.');
+      });
+    });
+  }
+
+  function clearAll(){
+    if(!db.customers.length){ toast('비울 고객이 없습니다.'); return; }
+    ask({
+      title: '모든 고객을 지울까요?',
+      message: '고객 ' + db.customers.length + '명과 가입보험 ' + insuranceCount() + '건이 모두 지워집니다.\n\n지우기 전에 ‘JSON 백업’을 받아 두시면 다시 불러올 수 있습니다.',
+      confirmLabel: '전체 비우기',
+      danger: true
+    }).then(function(ok){
+      if(!ok) return;
+      var snap = JSON.parse(JSON.stringify(db.customers));
+      db.customers = [];
+      state.selected = {};
+      save();
+      closeModal();
+      render();
+      toast('모두 비웠습니다.', '되돌리기', function(){
+        db.customers = snap; save(); render(); toast('되돌렸습니다.');
+      });
+    });
+  }
+
+  /* =========================================================
+     설정
+     ========================================================= */
+  var installEvent = null;
+  window.addEventListener('beforeinstallprompt', function(e){
+    e.preventDefault();
+    installEvent = e;
+  });
+
+  function openSettings(){
+    var total = db.customers.reduce(function(s, c){ return s + monthlyTotal(c); }, 0);
+    var body = '';
+    body += '<div class="set-group">';
+    body += '  <div class="stat-row">' +
+            '<div class="stat"><div class="sv">' + db.customers.length + '명</div><div class="sl">고객</div></div>' +
+            '<div class="stat"><div class="sv">' + insuranceCount() + '건</div><div class="sl">가입보험</div></div>' +
+            '<div class="stat"><div class="sv">' + total.toLocaleString('ko-KR') + '</div><div class="sl">월 보험료(원)</div></div>' +
+            '</div>';
+    body += '</div>';
+
+    body += '<div class="set-group"><h3>백업 · 내보내기</h3>';
+    body += '  <button class="set-item" id="sJson"><span class="si-ico">💾</span><span class="si-main"><span class="si-title">JSON 백업 파일 받기</span><span class="si-sub">전체 자료를 한 파일로 저장 (복원용)</span></span><span>›</span></button>';
+    body += '  <button class="set-item" id="sXlsx"><span class="si-ico">📗</span><span class="si-main"><span class="si-title">엑셀 파일(.xlsx)로 받기</span><span class="si-sub">‘고객목록’과 ‘가입보험’ 두 시트로 바로 열립니다</span></span><span>›</span></button>';
+    body += '  <button class="set-item" id="sCsv"><span class="si-ico">📊</span><span class="si-main"><span class="si-title">CSV(엑셀)로 내보내기</span><span class="si-sub">엑셀에서 표로 열어 보기</span></span><span>›</span></button>';
+    body += '  <button class="set-item" id="sGcsv"><span class="si-ico">🟩</span><span class="si-main"><span class="si-title">구글 시트용 CSV 받기</span><span class="si-sub">한글이 깨지지 않는 형식 + 여는 방법 안내</span></span><span>›</span></button>';
+    body += '  <button class="set-item" id="sImport"><span class="si-ico">📥</span><span class="si-main"><span class="si-title">JSON 백업 불러오기</span><span class="si-sub">백업 파일로 되살리기</span></span><span>›</span></button>';
+    body += '</div>';
+
+    body += '<div class="set-group"><h3>자료 관리</h3>';
+    body += '  <button class="set-item" id="sSample"><span class="si-ico">🧪</span><span class="si-main"><span class="si-title">샘플 데이터 넣기</span><span class="si-sub">연습용 고객 4명 (샘플 표시됨)</span></span><span>›</span></button>';
+    body += '  <button class="set-item" id="sRmSample"><span class="si-ico">🧹</span><span class="si-main"><span class="si-title">샘플만 지우기</span><span class="si-sub">직접 등록한 고객은 그대로</span></span><span>›</span></button>';
+    body += '  <button class="set-item danger" id="sClear"><span class="si-ico">🗑</span><span class="si-main"><span class="si-title">전체 비우기</span><span class="si-sub">모든 고객 삭제 (되돌리기 가능)</span></span><span>›</span></button>';
+    body += '</div>';
+
+    body += '<div class="set-group"><h3>앱 정보</h3>';
+    body += '  <button class="set-item" id="sInstall"><span class="si-ico">📱</span><span class="si-main"><span class="si-title">홈 화면에 추가</span><span class="si-sub">앱처럼 열기 (크롬·삼성 인터넷)</span></span><span>›</span></button>';
+    body += '  <div class="set-item" style="border-top:1px solid #f1f4f8"><span class="si-ico">🔒</span><span class="si-main"><span class="si-title">자료는 이 기기에만 저장됩니다</span><span class="si-sub">서버로 보내지 않으며, 브라우저 기록을 지우면 함께 사라집니다. 가끔 JSON 백업을 받아 두세요. (첨부 사진·PDF는 백업 파일에 들어가지 않습니다)</span></span></div>';
+    body += '  <div class="set-item" style="border-top:1px solid #f1f4f8"><span class="si-ico">ℹ️</span><span class="si-main"><span class="si-title">용우고객관리대장 v' + APP_VERSION + '</span><span class="si-sub">오프라인에서도 열립니다</span></span></div>';
+    body += '</div>';
+
+    openModal({
+      title: '설정',
+      body: body,
+      after: function(){
+        $('#sJson').addEventListener('click', exportJSON);
+        $('#sXlsx').addEventListener('click', exportXLSX);
+        $('#sCsv').addEventListener('click', exportCSV);
+        $('#sGcsv').addEventListener('click', exportGoogleCSV);
+        $('#sImport').addEventListener('click', function(){ $('#importFile').click(); });
+        $('#sSample').addEventListener('click', function(){ closeModal(); addSamples(); });
+        $('#sRmSample').addEventListener('click', function(){ closeModal(); removeSamples(); });
+        $('#sClear').addEventListener('click', clearAll);
+        $('#sInstall').addEventListener('click', function(){
+          if(installEvent){
+            installEvent.prompt();
+            installEvent.userChoice.then(function(){ installEvent = null; });
+          }else{
+            ask({
+              title: '홈 화면에 추가하는 방법',
+              message: '① 브라우저 오른쪽 위 ⋮ (또는 ≡) 메뉴를 누릅니다.\n② ‘홈 화면에 추가’ 또는 ‘앱 설치’를 고릅니다.\n③ 이름을 확인하고 ‘추가’를 누릅니다.\n\n※ file:// 로 연 경우에는 설치가 되지 않습니다. 웹 주소(https)로 열어 주세요.',
+              buttons: [{ label: '확인', value: true, cls: 'primary' }]
+            });
+          }
+        });
+      }
+    });
+  }
+  $('#btnSettings').addEventListener('click', openSettings);
+
+  /* =========================================================
+     파일 선택 (가져오기)
+     ========================================================= */
+  var fileInput = document.createElement('input');
+  fileInput.type = 'file';
+  fileInput.accept = '.json,application/json';
+  fileInput.id = 'importFile';
+  fileInput.style.display = 'none';
+  fileInput.addEventListener('change', function(){
+    if(fileInput.files && fileInput.files[0]) importJSON(fileInput.files[0]);
+    fileInput.value = '';
+  });
+  document.body.appendChild(fileInput);
+
+  /* =========================================================
+     시작
+     ========================================================= */
+  load();
+  render();
+
+  // 서비스 워커 (https 또는 localhost 에서만)
+  if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
+    // 이미 앱을 설치해 쓰던 기기에서 새 버전이 준비되면 알려 줍니다.
+    var hadSWController = !!navigator.serviceWorker.controller;
+    navigator.serviceWorker.addEventListener('controllerchange', function(){
+      if(!hadSWController) return;
+      hadSWController = false;
+      toast('새 버전이 준비되었습니다.', '새로 고침', function(){ location.reload(); });
+    });
+    window.addEventListener('load', function(){
+      navigator.serviceWorker.register('./sw.js').catch(function(e){ console.warn('오프라인 저장 등록 실패', e); });
+    });
+  }
+
+  // 테스트용 노출 (개발 확인용)
+  window.__ledger = {
+    get db(){ return db; },
+    version: APP_VERSION,
+    render: render,
+    openPrint: openPrint,
+    setState: function(patch){ Object.assign(state, patch); render(); },
+    listFiles: idbList,
+    getFile: idbGet,
+    calcValue: calcCurrentValue,
+    printPhotos: function(){ return printPhotos; }
+  };
+})();
+</script>
+</body>
+</html>
