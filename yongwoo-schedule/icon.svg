@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="용우일정표">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1aa79a"/>
+      <stop offset="1" stop-color="#0a5a54"/>
+    </linearGradient>
+    <clipPath id="page">
+      <rect x="86" y="96" width="340" height="336" rx="34"/>
+    </clipPath>
+    <filter id="sh" x="-20%" y="-20%" width="150%" height="150%">
+      <feDropShadow dx="0" dy="9" stdDeviation="10" flood-color="#04231f" flood-opacity="0.38"/>
+    </filter>
+  </defs>
+  <rect width="512" height="512" rx="116" fill="url(#bg)"/>
+  <!-- 고리 -->
+  <rect x="146" y="72" width="30" height="60" rx="15" fill="#0a5a54"/>
+  <rect x="336" y="72" width="30" height="60" rx="15" fill="#0a5a54"/>
+  <!-- 달력 종이 -->
+  <g filter="url(#sh)">
+    <rect x="86" y="96" width="340" height="336" rx="34" fill="#ffffff"/>
+  </g>
+  <g clip-path="url(#page)">
+    <rect x="86" y="96" width="340" height="96" fill="#ffd21f"/>
+    <rect x="86" y="170" width="340" height="22" fill="#f0b800"/>
+  </g>
+  <!-- 요일 점 -->
+  <g fill="#0a5a54">
+    <circle cx="148" cy="134" r="12"/>
+    <circle cx="212" cy="134" r="12"/>
+    <circle cx="276" cy="134" r="12"/>
+    <circle cx="340" cy="134" r="12"/>
+    <circle cx="404" cy="134" r="12" fill="#d93a2b"/>
+  </g>
+  <!-- 날짜 칸 -->
+  <g fill="#cfe7e3">
+    <rect x="120" y="216" width="52" height="42" rx="10"/>
+    <rect x="190" y="216" width="52" height="42" rx="10"/>
+    <rect x="260" y="216" width="52" height="42" rx="10"/>
+    <rect x="330" y="216" width="52" height="42" rx="10"/>
+    <rect x="120" y="276" width="52" height="42" rx="10"/>
+    <rect x="190" y="276" width="52" height="42" rx="10"/>
+    <rect x="330" y="276" width="52" height="42" rx="10"/>
+    <rect x="120" y="336" width="52" height="42" rx="10"/>
+    <rect x="190" y="336" width="52" height="42" rx="10"/>
+    <rect x="260" y="336" width="52" height="42" rx="10"/>
+  </g>
+  <!-- 오늘(빨강) -->
+  <rect x="260" y="276" width="52" height="42" rx="10" fill="#d93a2b"/>
+  <path d="M276 297l9 10 14-21" fill="none" stroke="#ffffff" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- 메모 줄 -->
+  <g fill="#e6b800">
+    <rect x="120" y="396" width="200" height="12" rx="6"/>
+    <rect x="120" y="418" width="128" height="12" rx="6" opacity="0.7"/>
+  </g>
+</svg>

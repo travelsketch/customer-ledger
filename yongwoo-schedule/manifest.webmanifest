@@ -1,0 +1,25 @@
+{
+  "id": "./",
+  "name": "용우일정표",
+  "short_name": "용우일정표",
+  "description": "일간·주간·월간·연간이 한 번에 연동되는 연간일정표 — 음력과 공휴일, 메모·사진·파일 첨부, A4 인쇄, PC·폰 구글 드라이브 동기화.",
+  "lang": "ko",
+  "dir": "ltr",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "any",
+  "background_color": "#f1f5f6",
+  "theme_color": "#0f766e",
+  "categories": ["productivity", "business", "utilities"],
+  "icons": [
+    { "src": "./icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "./icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "./icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "./icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ],
+  "shortcuts": [
+    { "name": "오늘 일정", "short_name": "오늘", "url": "./index.html?view=day" }
+  ]
+}
