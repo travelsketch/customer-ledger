@@ -53,7 +53,12 @@ build.py                index.html 조립 스크립트
 lunar-table.txt         음력 표(KASI, 1900~2050)
 src/                    화면·코드 원본(app.css, app.html, core/store/render/editor/ui.js)
 test/                   검증 스크립트와 음력 정답 자료
+preview-mobile.png      휴대폰(412x915) 월간 화면
+preview-yearly.png      PC(1280) 연간 화면 — 12개월 한눈에
+preview-day.png / preview-week.png / preview-pc.png / preview-print.png
 ```
+
+화면 캡처의 일정은 모두 **가상의 예시**입니다(실제 고객 정보 없음).
 
 ## 고치고 다시 올리기
 
