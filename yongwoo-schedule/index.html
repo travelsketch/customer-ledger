@@ -2368,6 +2368,20 @@ function handleRestoreFile(file) {
           });
         } catch (e) {}
       });
+      /* 백업에 없는 기존 일정은 지운 표시(tombstone)로 남겨, 다른 기기와 동기화해도 되살아나지 않게 합니다. */
+      var keep = {};
+      evs.forEach(function (e) { keep[e.id] = 1; });
+      var now = Date.now();
+      var st = syncState();
+      st.deleted = st.deleted || {};
+      S.events.forEach(function (o) {
+        if (keep[o.id]) return;
+        keep[o.id] = 1;
+        evs.push(normEvent({ id: o.id, date: o.date, title: o.title, memo: o.memo, color: o.color, createdAt: o.createdAt, updatedAt: now, deletedAt: now, allDay: o.allDay, start: o.start, end: o.end, endDate: o.endDate }));
+        st.deleted[o.id] = now;
+        attsOf(o.id).forEach(function (a) { st.deleted[a.id] = now; });
+      });
+      saveSyncState(st);
       S.events = evs;
       saveEvents();
       dbClear('attachments').then(function () { return dbPutMany('attachments', files); }).then(function () {
