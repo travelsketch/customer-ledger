@@ -2460,7 +2460,7 @@ function onViewClick(e) {
     var evEl = e.target.closest('[data-eid]');
     if (evEl) {
       var ev = eventById(evEl.getAttribute('data-eid'));
-      if (ev) openEditor(ev, false);
+      if (ev) { if (S.sheetKind) closeSheet(); openEditor(ev, false); }
     }
     return;
   }
