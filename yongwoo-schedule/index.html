@@ -325,13 +325,16 @@ input[type=date],input[type=time]{color-scheme:light}
 .paper-print .pev .pmemo{font-size:9.5pt;color:#333;white-space:pre-wrap;margin-top:2px}
 .paper-print .pev .plun{font-size:8pt;color:#666}
 .paper-print .photos{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:5px}
-.paper-print .photos img{width:100%;height:auto;border:1px solid #ddd;border-radius:3px}
+.paper-print .photos img{width:100%;max-height:82mm;object-fit:contain;border:1px solid #ddd;border-radius:3px;background:#fff}
 .paper-print .pfile{font-size:8pt;color:#444}
 .paper-print .pcal{width:100%;border-collapse:collapse;table-layout:fixed}
 .paper-print .pcal th{font-size:8pt;color:#333;border:1px solid #bbb;padding:3px;background:#f2f2f2}
 .paper-print .pcal td{border:1px solid #bbb;vertical-align:top;height:88px;padding:2px 3px;font-size:8pt}
 .paper-print .pcal td.out{background:#fafafa;color:#aaa}
 .paper-print .pcal .cd{font-size:9.5pt;font-weight:800}
+.paper-print .pcal td.sun .cd{color:#c00}
+.paper-print .pcal td.sat .cd{color:#1b5fae}
+.paper-print .pcal td.hol .cd{color:#c00}
 .paper-print .pcal .cl{font-size:7pt;color:#666}
 .paper-print .pcal .ce{font-size:7pt;color:#222;margin-top:1px;line-height:1.25}
 .paper-print .pgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
@@ -1559,8 +1562,9 @@ function renderMonth() {
     return map[ds] || '';
   }
   var today = todayYMD();
+  var rows = Math.ceil((wdOf(first) + parseYMD(ymd(new Date(m.getFullYear(), m.getMonth() + 1, 0))).getDate()) / 7);
   var cells = '';
-  for (var i = 0; i < 42; i++) {
+  for (var i = 0; i < rows * 7; i++) {
     var ds = addDays(gridStart, i);
     var d = parseYMD(ds);
     var inMonth = d.getMonth() === m.getMonth();
@@ -1598,7 +1602,8 @@ function renderMonth() {
         '</div>' +
       '</div>' +
       '<div class="dp-body">' +
-        (selEvs.length ? selEvs.map(function (e) { return evCardHTML(e); }).join('') : '<p class="empty-sm">이 날은 일정이 없습니다.</p>') +
+        (selEvs.length ? selEvs.map(function (e) { return evCardHTML(e); }).join('') :
+          '<p class="empty-sm">' + (liveEvents().length ? '이 날은 일정이 없습니다.' : '아직 일정이 없습니다.<br>＋ 추가를 눌러 첫 일정을 적어 보세요.') + '</p>') +
       '</div>' +
     '</section>';
 
@@ -1651,7 +1656,7 @@ function renderDay() {
     '</section>' +
     '<div class="day-list">' +
       (evs.length ? evs.map(function (e) { return evCardHTML(e, { memo: true }); }).join('') :
-        '<div class="card"><p class="empty-sm">이 날은 아직 일정이 없습니다.<br>아래 버튼으로 적어 보세요.</p></div>') +
+        '<div class="card"><p class="empty-sm">' + (liveEvents().length ? '이 날은 아직 일정이 없습니다.' : '아직 일정이 없습니다.') + '<br>아래 버튼으로 적어 보세요.</p></div>') +
     '</div>' +
     '<div class="day-foot"><button type="button" class="add-btn" data-act="add" data-ds="' + ds + '">＋ 일정 추가</button></div>';
   $('#viewRoot').innerHTML = html;
@@ -2248,13 +2253,15 @@ function buildPrintDoc() {
       '<table class="pcal"><thead><tr>';
     for (var k = 0; k < 7; k++) body += '<th>' + WEEK_KO[k] + '</th>';
     body += '</tr></thead><tbody>';
-    for (var r = 0; r < 6; r++) {
+    var daysInMonth = parseYMD(ymd(new Date(m.getFullYear(), m.getMonth() + 1, 0))).getDate();
+    var rowsN = Math.ceil((wdOf(first) + daysInMonth) / 7);
+    for (var r = 0; r < rowsN; r++) {
       body += '<tr>';
       for (var c = 0; c < 7; c++) {
         var ds2 = addDays(gs, r * 7 + c), d2 = parseYMD(ds2);
         var inM = d2.getMonth() === m.getMonth();
         var evs3 = eventsOn(ds2), hol = holidayOf(ds2);
-        body += '<td class="' + (inM ? '' : 'out') + '"><div class="cd">' + d2.getDate() + '</div>' +
+        body += '<td class="' + (inM ? '' : 'out') + (c === 0 ? ' sun' : '') + (c === 6 ? ' sat' : '') + '"><div class="cd">' + d2.getDate() + '</div>' +
           '<div class="cl">' + esc(lunarText(ds2)) + (hol ? ' · ' + esc(hol) : '') + '</div>' +
           evs3.map(function (e) { return '<div class="ce">• ' + esc(e.title || '일정') + '</div>'; }).join('') + '</td>';
       }
