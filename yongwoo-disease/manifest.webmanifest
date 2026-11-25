@@ -1,0 +1,22 @@
+{
+  "id": "./",
+  "name": "예외질환 검색기",
+  "short_name": "예외질환",
+  "description": "질병명·질병분류코드(KCD)로 보험사별 간편심사 예외질환·인수기준을 찾아 비교하는 개인용 검색기 — 개인 메모·자료 추가, A4 인쇄, PC·폰 구글 드라이브 동기화.",
+  "lang": "ko",
+  "dir": "ltr",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "any",
+  "background_color": "#f1f5f6",
+  "theme_color": "#0f766e",
+  "categories": ["productivity", "business", "utilities"],
+  "icons": [
+    { "src": "./icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "./icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "./icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "./icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

@@ -1,0 +1,1954 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>예외질환 검색기</title>
+<meta name="description" content="질병명이나 질병분류코드(KCD)로 보험사별 간편심사 예외질환·인수기준을 찾아 비교하는 개인용 검색기. 개인 메모·자료 추가, A4 인쇄, PC·폰 구글 드라이브 동기화.">
+<meta name="theme-color" content="#0f766e">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="예외질환 검색기">
+<meta name="color-scheme" content="light">
+<meta name="robots" content="noindex">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<style>
+:root{
+  --brand:#0f766e; --brand-d:#0a5a54; --brand-soft:#e4f3f1; --brand-line:#b3dbd5;
+  --accent:#ffc93c; --accent-soft:#fff4cc; --accent-d:#b47d00;
+  --ink:#16212b; --muted:#5c6a77; --faint:#8b97a3;
+  --line:#dbe4e8; --bg:#f1f5f6; --card:#ffffff;
+  --good:#1f7a4a; --good-bg:#e4f4ea; --warn:#9a5b00; --warn-bg:#fff3df; --bad:#b4372b; --bad-bg:#fbe6e2;
+  --son:#1b5fae; --son-bg:#e7effb; --saeng:#c2410c; --saeng-bg:#fdece3;
+  --radius:16px; --shadow:0 1px 2px rgba(12,35,40,.05),0 8px 20px rgba(12,35,40,.07);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{
+  background:var(--bg); color:var(--ink);
+  font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic","맑은 고딕","Noto Sans KR","Noto Sans CJK KR",system-ui,-apple-system,sans-serif;
+  font-size:16.5px; line-height:1.5; -webkit-font-smoothing:antialiased;
+  padding-bottom:calc(90px + env(safe-area-inset-bottom));
+}
+body.locked{overflow:hidden}
+button,input,textarea,select{font-family:inherit;font-size:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none;-webkit-tap-highlight-color:transparent}
+h1,h2,h3,h4,p,ul,dl,dd{margin:0}
+ul{padding-left:18px}
+[hidden]{display:none !important}
+mark{background:#ffe27a;color:#3a2c00;border-radius:3px;padding:0 1px;font-weight:inherit}
+
+/* ── 상단 ───────────────────────────────── */
+.appbar{position:sticky;top:0;z-index:30;background:#fff;border-bottom:1px solid var(--line)}
+.bar-in{max-width:1080px;margin:0 auto;display:flex;align-items:center;gap:6px;padding:7px 10px}
+.logo{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#14a196,#0a5a54);display:flex;align-items:center;justify-content:center;flex:none;box-shadow:0 3px 8px rgba(15,118,110,.32)}
+.brand-tx{flex:1;min-width:0;display:flex;flex-direction:column;padding-left:4px}
+.brand-tx h1{font-size:20px;font-weight:800;letter-spacing:-.4px;line-height:1.15}
+.brand-tx .sub{font-size:12.5px;color:var(--muted);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ibtn{min-width:44px;min-height:44px;border-radius:12px;font-size:20px;line-height:1;display:flex;align-items:center;justify-content:center;color:#26323d}
+.ibtn:active{background:#eef2f4}
+
+/* 드라이브 줄 */
+.drive-wrap{max-width:1080px;margin:0 auto;padding:8px 10px 0}
+.drive-btn{width:100%;min-height:42px;display:flex;align-items:center;gap:8px;padding:0 12px;border-radius:12px;background:var(--card);border:1.5px solid var(--line);color:var(--brand);font-size:14.5px;font-weight:700;text-align:left;box-shadow:var(--shadow)}
+.drive-btn .drive-ico{font-size:16px;flex:none}
+.drive-btn .drive-txt{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.drive-btn .drive-hint{font-size:12px;font-weight:700;color:var(--muted);flex:none}
+.drive-btn.on{background:#eaf7ef;border-color:#c2e5cf;color:#0a6b3c}
+.drive-btn.sync{background:var(--brand-soft);border-color:var(--brand-line)}
+.drive-btn.warn{background:#fff3df;border-color:#eccfa2;color:#8a4b00}
+
+/* ── 검색 밴드 ─────────────────────────── */
+.searchband{background:linear-gradient(180deg,#fff8e0,#fffdf4);border-bottom:1px solid #f0e4b8;margin-top:8px}
+.sb-in{max-width:1080px;margin:0 auto;padding:10px 10px 12px}
+.search-box{display:flex;align-items:center;gap:8px;background:#fff;border:2px solid var(--accent);border-radius:14px;padding:0 10px;box-shadow:0 3px 12px rgba(180,125,0,.12)}
+.search-box .sb-ico{font-size:17px;flex:none;opacity:.8}
+.search-box input{flex:1;min-width:0;height:52px;border:0;outline:none;background:none;font-size:17px;font-weight:600}
+.search-box input::placeholder{color:#a8b1b8;font-weight:500;font-size:15.5px}
+.search-box input::-webkit-search-cancel-button{display:none}
+.search-box #clear{min-width:38px;height:38px;border-radius:10px;font-size:16px;color:var(--muted);background:#f1f5f6}
+.chips{display:flex;gap:6px;overflow-x:auto;padding:9px 0 2px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;min-height:36px;padding:0 12px;border-radius:18px;background:#fff;border:1.5px solid #ecd9a3;font-size:14px;font-weight:700;color:#6b5518;white-space:nowrap}
+.chip:active{background:var(--accent-soft)}
+.chip.ghost{background:#f4f7f8;border-color:var(--line);color:#4a5865}
+.filters{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;margin-top:9px}
+.filters .seg{grid-column:1/-1}
+@media (min-width:640px){.filters{grid-template-columns:minmax(0,1.15fr) minmax(0,1fr) auto}.filters .seg{grid-column:auto}}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;background:#efe7cd;border-radius:12px;padding:3px}
+.seg button{min-height:40px;border-radius:9px;font-size:14.5px;font-weight:800;color:#5b5336;letter-spacing:-.3px}
+.seg button[aria-pressed="true"]{background:#fff;color:var(--brand-d);box-shadow:0 1px 3px rgba(12,35,40,.16)}
+#ins{width:100%;min-height:46px;border-radius:12px;border:1.5px solid #e6dcc0;background:#fff;padding:0 10px;font-size:15px;font-weight:700;outline:none}
+#ins:focus{border-color:var(--brand);box-shadow:0 0 0 3px rgba(15,118,110,.12)}
+.reset{min-height:46px;padding:0 12px;border-radius:12px;background:#fff;border:1.5px solid var(--line);font-size:14px;font-weight:800;color:#41505c;white-space:nowrap}
+.reset:active{background:#eef2f4}
+
+main{max-width:1080px;margin:0 auto;padding:10px 10px 10px}
+.footnote{font-size:12.5px;color:var(--faint);font-weight:600;line-height:1.6;padding:14px 4px 8px;text-align:center}
+
+/* ── 결과 요약 ─────────────────────────── */
+.card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow)}
+.summary{padding:13px 13px 11px}
+.summary h2{font-size:18px;font-weight:800;letter-spacing:-.4px;line-height:1.35;word-break:keep-all}
+.summary h2 .sm-t{font-size:15.5px;color:var(--muted);font-weight:700}
+.summary h2 b{color:var(--brand-d)}
+.hitrow{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
+.hit{display:inline-flex;align-items:center;gap:6px;min-height:34px;padding:0 10px;border-radius:18px;background:#f3f7f8;border:1.5px solid var(--line);font-size:13.5px;font-weight:800;color:#33414d}
+.hit:active{background:var(--brand-soft)}
+.hit i{font-style:normal;font-size:12px;font-weight:800;color:var(--brand-d);background:#fff;border-radius:9px;padding:1px 6px}
+.hit.none{background:#fafbfb;color:#8b97a3;font-weight:700}
+.hit.none i{color:#98a3ad}
+.dot{width:8px;height:8px;border-radius:50%;flex:none}
+.dot.son{background:var(--son)}
+.dot.saeng{background:var(--saeng)}
+.misslabel{font-size:12.5px;font-weight:800;color:var(--faint);margin-top:12px}
+.legend{display:flex;flex-wrap:wrap;gap:6px;margin-top:11px;padding-top:10px;border-top:1px dashed var(--line)}
+.lg{font-size:12px;font-weight:800;border-radius:7px;padding:2px 7px}
+.lg.good{background:var(--good-bg);color:var(--good)}
+.lg.warn{background:var(--warn-bg);color:var(--warn)}
+.lg.bad{background:var(--bad-bg);color:var(--bad)}
+
+/* ── 빈 화면 ──────────────────────────── */
+.welcome{padding:18px 16px}
+.welcome h2{font-size:19px;font-weight:800;letter-spacing:-.4px;margin-bottom:8px}
+.welcome p{font-size:15px;color:#3c4a56;line-height:1.62;margin-bottom:8px;word-break:keep-all}
+.welcome p b{color:var(--brand-d)}
+.welcome .hint{font-size:13px;color:var(--faint);font-weight:700}
+.rec-row{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}
+.rec-l{font-size:12.5px;font-weight:800;color:var(--faint)}
+
+/* ── 보험사 카드 ──────────────────────── */
+.ins{margin-top:10px;overflow:hidden}
+.card-h{display:flex;align-items:center;gap:7px;padding:13px 13px 0;flex-wrap:wrap}
+.card-h h3{font-size:18px;font-weight:800;letter-spacing:-.4px}
+.kind{font-size:11.5px;font-weight:800;border-radius:7px;padding:2px 7px}
+.kind.son{background:var(--son-bg);color:var(--son)}
+.kind.saeng{background:var(--saeng-bg);color:var(--saeng)}
+.count{margin-left:auto;font-size:13px;font-weight:800;color:var(--faint);flex:none}
+.card-acts{display:flex;gap:6px;flex-wrap:wrap;padding:9px 13px 10px}
+.act{min-height:36px;padding:0 11px;border-radius:9px;background:#f2f6f7;font-size:13px;font-weight:800;color:#3c4a56}
+.act:active{background:#e6ecef}
+.act.on{background:var(--brand-soft);color:var(--brand-d)}
+.act.add{background:var(--accent-soft);color:#7a5a00}
+.notes{margin:0 13px 10px;background:#f7fafb;border:1px solid #e8eff1;border-radius:12px;padding:10px 12px}
+.notes h4{font-size:13.5px;font-weight:800;color:var(--brand-d);margin:6px 0 4px}
+.notes h4:first-child{margin-top:0}
+.notes ul{padding-left:16px}
+.notes li{font-size:13.5px;color:#3c4a56;line-height:1.55;margin:2px 0;word-break:keep-all}
+.notes-empty{font-size:13.5px;color:var(--muted);font-weight:700}
+.imgs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:0 13px 10px}
+@media (min-width:640px){.imgs{grid-template-columns:repeat(5,1fr)}}
+.imgbtn{padding:0;border-radius:8px;overflow:hidden;border:1px solid var(--line);background:#eef2f4;aspect-ratio:3/4}
+.imgbtn img{width:100%;height:100%;object-fit:cover;display:block}
+.rows{display:flex;flex-direction:column}
+.row{padding:12px 13px;border-top:1px solid #edf1f3}
+.row.mine{background:#fffdf3}
+.row-t{display:flex;flex-wrap:nowrap;align-items:flex-start;gap:6px}
+.row-id{flex:1;min-width:0;display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.row-t .nm{font-size:16.5px;font-weight:800;letter-spacing:-.3px;word-break:keep-all}
+.row-t .code{font-size:12.5px;font-weight:800;color:#243040;background:#eef3f6;border-radius:6px;padding:1px 6px;font-variant-numeric:tabular-nums}
+.row-t .cat{font-size:12px;font-weight:800;color:#5c6a77;background:#f4f7f8;border-radius:6px;padding:1px 6px}
+.row-t .src{font-size:11.5px;font-weight:800;color:var(--brand-d);background:var(--brand-soft);border-radius:6px;padding:1px 6px}
+.row-t .mine{font-size:11.5px;font-weight:800;color:#7a5a00;background:var(--accent-soft);border-radius:6px;padding:1px 6px}
+.row-acts{display:flex;gap:4px;flex:none;padding-top:1px}
+.mini{min-height:32px;padding:0 8px;border-radius:8px;background:#f2f6f7;font-size:12.5px;font-weight:800;color:#4a5865}
+.mini:active{background:#e6ecef}
+.mini.has{background:var(--accent-soft);color:#7a5a00}
+.kv{display:grid;grid-template-columns:1fr;gap:0;margin-top:8px}
+@media (min-width:680px){.kv{grid-template-columns:1fr 1fr;column-gap:14px}}
+.kvp{display:flex;gap:8px;align-items:flex-start;border-bottom:1px dashed #eef2f4;padding:4px 0;min-width:0}
+.kv dt{flex:0 0 44%;font-size:13px;font-weight:700;color:#6b7883;word-break:keep-all}
+.kv dd{flex:1;min-width:0;font-size:14px;font-weight:700;color:#22303c;word-break:keep-all;overflow-wrap:anywhere}
+.kvp.good dd{color:var(--good)}
+.kvp.warn dd{color:var(--warn)}
+.kvp.bad dd{color:var(--bad)}
+.kvp.wide{grid-column:1/-1}
+.rowmemo{margin-top:8px;background:var(--accent-soft);border-radius:10px;padding:8px 10px;font-size:13.5px;color:#5d4700;line-height:1.55;word-break:keep-all}
+.rowmemo b{font-size:11.5px;font-weight:800;color:#8a5a00;background:#fff;border-radius:6px;padding:1px 6px;margin-right:5px}
+.more{width:calc(100% - 26px);margin:2px 13px 12px;min-height:44px;border-radius:11px;background:#f2f6f7;font-size:14px;font-weight:800;color:var(--brand-d)}
+.more:active{background:var(--brand-soft)}
+.imgonly .hint{padding:0 13px 10px}
+.hint{font-size:12.5px;color:var(--muted);font-weight:700;line-height:1.6}
+
+/* ── 내 자료 편집기 ───────────────────── */
+#editor{position:fixed;inset:0;z-index:60;background:var(--bg);display:flex;flex-direction:column}
+.ed-bar{display:flex;align-items:center;gap:4px;background:#fff;border-bottom:1px solid var(--line);padding:6px 8px;flex:none}
+.ed-bar .ed-title{flex:1;text-align:center;font-size:16.5px;font-weight:800;letter-spacing:-.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ebtn{min-width:44px;height:44px;border-radius:11px;font-size:15px;font-weight:800;color:#33414d;display:flex;align-items:center;justify-content:center;padding:0 10px}
+.ebtn:active{background:#eef2f4}
+.ebtn.save{background:var(--brand);color:#fff;height:42px;padding:0 15px}
+.ebtn.del{color:#a3261e}
+.ed-scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px 12px 30px;width:100%;max-width:720px;margin:0 auto}
+.fld{background:#fff;border-radius:14px;box-shadow:var(--shadow);padding:12px;margin-bottom:10px}
+.fld-label{font-size:12.5px;font-weight:800;color:var(--faint);letter-spacing:.2px;margin-bottom:6px}
+.fld-label .req{color:#b4372b;font-size:11px}
+.row2{display:flex;gap:8px}
+.row2 > *{flex:1;min-width:0}
+.inp{width:100%;border:1.5px solid var(--line);border-radius:11px;background:#fff;padding:0 11px;height:48px;font-size:16px;outline:none}
+textarea.inp{height:auto;min-height:96px;padding:11px;line-height:1.6;resize:vertical}
+.inp:focus{border-color:var(--brand);box-shadow:0 0 0 3px rgba(15,118,110,.12)}
+select.inp{height:48px;font-weight:700}
+.kvrow{display:flex;gap:6px;align-items:center;margin-bottom:7px}
+.kvrow .k{flex:0 0 40%;border:1.5px solid var(--line);border-radius:10px;height:44px;padding:0 9px;font-size:15px;outline:none;min-width:0}
+.kvrow .v{flex:1;min-width:0;border:1.5px solid var(--line);border-radius:10px;height:44px;padding:0 9px;font-size:15px;outline:none}
+.kvrow .k:focus,.kvrow .v:focus{border-color:var(--brand);box-shadow:0 0 0 3px rgba(15,118,110,.12)}
+.kvdel{width:36px;height:36px;flex:none;border-radius:9px;background:#f4f7f8;color:#8b97a3;font-size:14px}
+.addkv{min-height:42px;padding:0 12px;border-radius:10px;border:1.5px dashed var(--brand-line);color:var(--brand-d);font-size:14px;font-weight:800;width:100%;margin-top:2px}
+.btn{min-height:48px;padding:0 16px;border-radius:12px;font-size:15px;font-weight:800;background:#eef2f4;color:#2b3546;display:inline-flex;align-items:center;justify-content:center;gap:6px;width:100%}
+.btn.primary{background:var(--brand);color:#fff;box-shadow:0 4px 12px rgba(15,118,110,.24)}
+.btn.danger-line{background:#fff;border:1.5px solid #e5b4ae;color:#a3261e}
+
+/* ── 시트 · 모달 ──────────────────────── */
+.modal{position:fixed;inset:0;z-index:80;background:rgba(10,26,30,.5);display:flex;align-items:flex-end;justify-content:center}
+.modal.mid{align-items:center;padding:16px}
+.modal.full{align-items:stretch;justify-content:center}
+.sheet{background:#fff;width:100%;max-width:620px;max-height:88vh;overflow-y:auto;border-radius:20px 20px 0 0;padding:4px 16px calc(16px + env(safe-area-inset-bottom));box-shadow:0 -8px 30px rgba(8,30,34,.3)}
+.sheet-head{display:flex;align-items:center;justify-content:space-between;padding:10px 0 6px;position:sticky;top:0;background:#fff;z-index:2}
+.sheet-head h2{font-size:17px;font-weight:800;letter-spacing:-.3px}
+.sheet-head button{width:40px;height:40px;border-radius:10px;font-size:17px;color:var(--muted)}
+.sheet-row{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:56px;padding:6px 2px;border-bottom:1px solid #eef2f4;width:100%;text-align:left}
+.sheet-row:last-child{border-bottom:0}
+.sheet-row .sr-l{display:flex;align-items:center;gap:10px;min-width:0}
+.sheet-row .sr-ico{font-size:19px;width:24px;text-align:center;flex:none}
+.sheet-row .sr-tx{font-size:15.5px;font-weight:700}
+.sheet-row .sr-tx small{display:block;font-size:12px;font-weight:600;color:var(--muted)}
+.sheet-row .sr-v{font-size:15px;font-weight:700;color:var(--muted);white-space:nowrap}
+.sheet-note{font-size:13px;color:var(--muted);line-height:1.6;padding:6px 2px 10px;font-weight:600}
+.sheet-sec{font-size:12.5px;font-weight:800;color:var(--faint);padding:14px 2px 4px}
+.sheet-btns{display:flex;gap:8px;margin-top:10px}
+.sheet-btns .btn{flex:1}
+.cov{border-bottom:1px solid #eef2f4;padding:8px 0 10px}
+.cov-h{display:flex;align-items:center;gap:8px;justify-content:space-between}
+.cov-h b{font-size:15.5px;font-weight:800}
+.cov ul{padding-left:18px;margin-top:4px}
+.cov li{font-size:13px;color:#42505c;line-height:1.5;margin:2px 0}
+.cov .n{font-size:11.5px;font-weight:800;color:var(--faint)}
+.linkbtn{min-height:34px;padding:0 10px;border-radius:9px;background:var(--brand-soft);color:var(--brand-d);font-size:12.5px;font-weight:800;flex:none}
+.mine-row{width:100%;text-align:left;border-bottom:1px solid #eef2f4;padding:9px 2px;display:flex;flex-direction:column;gap:2px}
+.mr-t{font-size:15px;font-weight:800;color:#22303c}
+.mr-t b{color:var(--brand-d)}
+.mr-t i{font-style:normal;font-size:12px;color:var(--faint)}
+.mr-s{font-size:12.5px;color:var(--muted);font-weight:600;line-height:1.45}
+.help h4{font-size:14px;font-weight:800;color:var(--brand-d);margin:14px 0 5px}
+.help h4:first-child{margin-top:2px}
+.help p{font-size:13.5px;color:#3c4a56;line-height:1.65;margin-bottom:6px;word-break:keep-all}
+.help ul{padding-left:18px;margin-bottom:6px}
+.help li{font-size:13.5px;color:#3c4a56;line-height:1.62;margin:3px 0;word-break:keep-all}
+.drv-state{display:flex;justify-content:space-between;align-items:center;min-height:42px;border-bottom:1px solid #eef2f4;font-size:14px;font-weight:700;color:var(--muted)}
+.drv-state b{color:var(--brand-d)}
+.drv-more{margin-top:12px;font-size:13px;font-weight:700;color:var(--muted)}
+.drv-more summary{min-height:40px;display:flex;align-items:center;cursor:pointer}
+.drv-more .inp{margin:6px 0 8px;font-size:13px;height:44px}
+.confirm-box{background:#fff;border-radius:18px;width:100%;max-width:350px;padding:20px 18px 16px;box-shadow:0 12px 40px rgba(8,30,34,.32);text-align:center}
+.confirm-box p{font-size:15.5px;font-weight:700;line-height:1.55;margin-bottom:16px;word-break:keep-all}
+.confirm-box .cf-sub{font-size:13px;color:var(--muted);font-weight:600}
+.confirm-btns{display:flex;gap:8px}
+.confirm-btns button{flex:1;min-height:48px;border-radius:12px;font-size:15px;font-weight:800;background:#eef2f4;color:#33414d}
+.confirm-btns #confirmYes{background:var(--brand);color:#fff}
+.confirm-btns #confirmYes.danger{background:#b3261e}
+
+/* 원본 이미지 크게 보기 */
+.modal.lb{background:#0a1517}
+.lb-box{width:100%;max-width:1100px;height:100%;display:flex;flex-direction:column}
+.lb-bar{display:flex;align-items:center;gap:8px;padding:10px 12px;color:#fff;font-size:14px;font-weight:700}
+.lb-bar span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lb-bar button{width:42px;height:42px;border-radius:10px;background:rgba(255,255,255,.14);color:#fff;font-size:16px}
+.lb-img{flex:1;overflow:auto;display:flex;align-items:flex-start;justify-content:center;padding:4px}
+.lb-img img{max-width:100%;height:auto;display:block;background:#fff}
+.lb-foot{padding:8px 12px calc(14px + env(safe-area-inset-bottom));display:flex;gap:8px;justify-content:center}
+.lb-foot button{min-height:46px;padding:0 18px;border-radius:12px;font-size:15px;font-weight:800;background:rgba(255,255,255,.16);color:#fff}
+
+/* ── 인쇄 미리보기 ────────────────────── */
+.print-card{background:#e9edef;width:100%;max-width:900px;height:100%;display:flex;flex-direction:column}
+.print-head{display:flex;align-items:center;gap:8px;background:#fff;padding:8px 12px;border-bottom:1px solid var(--line)}
+.print-head b{flex:1;font-size:16px}
+.print-head button{width:42px;height:42px;border-radius:10px;font-size:16px;color:var(--muted)}
+.print-opts{display:flex;gap:14px;background:#fff;padding:8px 14px;font-size:13.5px;font-weight:700;color:#33414d;border-bottom:1px solid var(--line);flex-wrap:wrap;align-items:center}
+.print-opts label{display:flex;align-items:center;gap:6px}
+.print-opts input{width:18px;height:18px}
+.print-opts select{min-height:36px;border:1.5px solid var(--line);border-radius:9px;padding:0 6px;font-size:13.5px;font-weight:700}
+.preview-wrap{flex:1;overflow:auto;padding:12px;display:flex;justify-content:center;align-items:flex-start}
+.print-foot{background:#fff;padding:8px 12px calc(10px + env(safe-area-inset-bottom));display:flex;gap:8px;justify-content:flex-end;border-top:1px solid var(--line)}
+.print-foot .btn{width:auto;min-height:48px;padding:0 22px}
+
+.paper-print{width:794px;background:#fff;padding:40px 38px;box-sizing:border-box;color:#111;font-size:10.5pt;line-height:1.5;flex:none;box-shadow:0 6px 24px rgba(8,30,34,.18)}
+.paper-print .pd-head{display:flex;align-items:flex-end;justify-content:space-between;border-bottom:2px solid #111;padding-bottom:6px;margin-bottom:12px}
+.paper-print .pd-name{font-size:12pt;font-weight:800;letter-spacing:2px}
+.paper-print .pd-date{font-size:8.5pt;color:#444}
+.paper-print h3.pt{font-size:15pt;font-weight:800;margin:0 0 3px;letter-spacing:-.4px}
+.paper-print .pmeta{font-size:8.5pt;color:#555;margin-bottom:10px}
+.paper-print .pins{margin-top:11px;page-break-inside:auto}
+.paper-print .pins h4{font-size:11.5pt;font-weight:800;border-bottom:1.5px solid #333;padding-bottom:3px;margin:0 0 5px;page-break-after:avoid}
+.paper-print .pins h4 span{font-size:8.5pt;font-weight:700;color:#555;margin-left:4px}
+.paper-print .prow{padding:5px 0 6px;border-bottom:1px solid #e3e3e3;page-break-inside:avoid}
+.paper-print .pnm{font-size:10.5pt;font-weight:800;margin-bottom:3px}
+.paper-print .pnm b{font-size:8.5pt;background:#f0f0f0;border-radius:3px;padding:0 4px;margin-left:3px;font-weight:800}
+.paper-print .pnm em{font-style:normal;font-size:8pt;color:#666;margin-left:3px}
+.paper-print .pnm .pmine{font-style:normal;font-size:7.5pt;color:#8a5a00;background:#fff3cc;border-radius:3px;padding:0 4px;margin-left:3px}
+.paper-print table{width:100%;border-collapse:collapse;table-layout:fixed}
+.paper-print th{width:20%;font-size:8pt;font-weight:700;color:#555;text-align:left;padding:1.5px 4px 1.5px 0;vertical-align:top}
+.paper-print td{width:30%;font-size:8.5pt;color:#111;padding:1.5px 8px 1.5px 0;vertical-align:top;word-break:keep-all;overflow-wrap:anywhere}
+.paper-print .pmemo{font-size:8.5pt;color:#4a3c00;background:#fffbe8;border-radius:3px;padding:3px 5px;margin-top:3px;white-space:normal}
+.paper-print .pmemo b{font-size:7.5pt;background:#fff;border-radius:3px;padding:0 3px;margin-right:3px}
+.paper-print .pmore{font-size:8pt;color:#666;padding:3px 0}
+.paper-print .pnone{font-size:8.5pt;color:#555}
+.paper-print .pnotes{background:#f7f7f7;border-radius:4px;padding:5px 7px;margin:3px 0 6px;font-size:8pt;color:#333}
+.paper-print .pnotes b{display:block;font-size:8pt;margin-top:2px}
+.paper-print .pnotes ul{padding-left:13px;margin:1px 0}
+.paper-print .pnotes li{font-size:7.6pt;line-height:1.4;margin:1px 0;word-break:keep-all}
+.paper-print .pfoot{margin-top:12px;border-top:1px solid #ccc;padding-top:6px;font-size:7.6pt;color:#666;line-height:1.5}
+#printRoot{display:none}
+
+#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(96px + env(safe-area-inset-bottom));z-index:120;background:rgba(14,32,36,.95);color:#fff;font-size:14px;font-weight:700;padding:11px 16px;border-radius:12px;max-width:88vw;text-align:center;box-shadow:0 8px 22px rgba(8,30,34,.3);line-height:1.45}
+.fab{position:fixed;right:14px;bottom:calc(14px + env(safe-area-inset-bottom));min-width:54px;height:52px;border-radius:26px;background:var(--brand);color:#fff;font-size:21px;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 20px rgba(15,118,110,.38);z-index:35;padding:0 15px;gap:5px}
+.fab span{font-size:14px;font-weight:800}
+.fab:active{transform:scale(.96)}
+@media (max-width:400px){
+  .seg button{font-size:13.5px}
+  .row-t .nm{font-size:15.5px}
+}
+@media print{
+  html,body{background:#fff !important;padding:0 !important;margin:0 !important}
+  .appbar,.drive-wrap,.searchband,main,.fab,#toast,.modal,#editor,.lb{display:none !important}
+  #printRoot{display:block !important}
+  .paper-print{width:auto;box-shadow:none;padding:0}
+  @page{size:A4;margin:11mm 10mm 12mm}
+}
+
+</style>
+</head>
+<body>
+<div id="appView">
+  <header class="appbar">
+    <div class="bar-in">
+      <span class="logo" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="26" height="26">
+          <circle cx="10.4" cy="10.4" r="6.1" fill="none" stroke="#ffffff" stroke-width="2.3"></circle>
+          <line x1="14.9" y1="14.9" x2="20.2" y2="20.2" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round"></line>
+          <rect x="9.3" y="7.3" width="2.2" height="6.2" rx="1.1" fill="#ffc93c"></rect>
+          <rect x="7.3" y="9.3" width="6.2" height="2.2" rx="1.1" fill="#ffc93c"></rect>
+        </svg>
+      </span>
+      <div class="brand-tx">
+        <h1>예외질환 검색기</h1>
+        <span class="sub" id="barSub">보험사별 인수기준</span>
+      </div>
+      <button class="ibtn" id="btnFind" type="button" aria-label="검색창으로" title="검색">
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="#33414d" stroke-width="2.1" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.4"></circle><line x1="15.4" y1="15.4" x2="20.4" y2="20.4"></line></svg>
+      </button>
+      <button class="ibtn" id="btnMenu" type="button" aria-label="메뉴" title="메뉴">⋮</button>
+    </div>
+  </header>
+
+  <div class="drive-wrap">
+    <button id="driveBarBtn" class="drive-btn" type="button">
+      <span class="drive-ico">☁️</span>
+      <span class="drive-txt" id="driveText">구글 드라이브 연결</span>
+      <span class="drive-hint" id="driveHint">내 자료·메모</span>
+    </button>
+  </div>
+
+  <div class="searchband">
+    <div class="sb-in">
+      <form id="searchForm" class="search-box" role="search">
+        <span class="sb-ico" aria-hidden="true">🔍</span>
+        <input id="q" type="search" placeholder="질병명 또는 질병코드 (예: 대장용종, D12)" autocomplete="off" autocapitalize="off" enterkeyhint="search" aria-label="질병명 또는 질병코드">
+        <button id="clear" type="button" aria-label="검색어 지우기" hidden>✕</button>
+      </form>
+      <div class="chips" id="tags" aria-label="자주 찾는 질환"></div>
+      <div class="filters">
+        <div class="seg" role="group" aria-label="보험 구분">
+          <button type="button" data-t="" aria-pressed="true">전체</button>
+          <button type="button" data-t="손보" aria-pressed="false">손해보험</button>
+          <button type="button" data-t="생보" aria-pressed="false">생명보험</button>
+        </div>
+        <select id="ins" aria-label="보험사 선택"><option value="">모든 보험사</option></select>
+        <button type="button" id="reset" class="reset">필터 초기화</button>
+      </div>
+    </div>
+  </div>
+
+  <main>
+    <div id="summary"></div>
+    <div id="results"></div>
+    <p class="footnote">
+      보험사가 GA에 배포한 예외질환·인수기준 참고 자료이며, 실시간 심사 결과가 아니므로 최종 인수 여부는 각 보험사 언더라이팅 결과를 따릅니다. 개인 참고용으로만 사용하세요.
+    </p>
+  </main>
+
+  <button class="fab" id="fab" type="button" aria-label="내 자료 추가">＋<span>내 자료</span></button>
+</div>
+
+<!-- 내 자료 편집기 -->
+<div id="editor" hidden>
+  <header class="ed-bar">
+    <button class="ebtn" id="edCancel" type="button">취소</button>
+    <div class="ed-title" id="edBarTitle">내 자료 추가</div>
+    <button class="ebtn del" id="edDelete" type="button" hidden>삭제</button>
+    <button class="ebtn save" id="edSave" type="button">저장</button>
+  </header>
+  <div class="ed-scroll">
+    <div class="fld">
+      <div class="fld-label">보험사</div>
+      <select id="edIns" class="inp sel"></select>
+    </div>
+    <div class="fld">
+      <div class="fld-label">질병명 <span class="req">필수</span></div>
+      <input id="edName" class="inp" type="text" placeholder="예) 대장용종" autocomplete="off">
+      <div class="row2" style="margin-top:8px">
+        <div>
+          <div class="fld-label">질병코드</div>
+          <input id="edCode" class="inp" type="text" placeholder="예) D12, K63.5" autocomplete="off" autocapitalize="characters">
+        </div>
+        <div>
+          <div class="fld-label">분류</div>
+          <input id="edCat" class="inp" type="text" placeholder="예) 소화기계" autocomplete="off">
+        </div>
+      </div>
+    </div>
+    <div class="fld">
+      <div class="fld-label">항목별 기준</div>
+      <div id="edKv"></div>
+      <button type="button" class="addkv" id="edAddKv">＋ 항목 추가</button>
+      <p class="hint">왼쪽에 담보·항목 이름, 오른쪽에 기준을 적습니다. 예) 경과기간 / 3개월</p>
+    </div>
+    <div class="fld">
+      <div class="fld-label">메모 (선택)</div>
+      <textarea id="edNote" class="inp" rows="4" placeholder="예) 성종락 고객 2024년 3월 용종 2개 제거"></textarea>
+    </div>
+    <button type="button" class="btn danger-line" id="edRevert" hidden>보험사 원래 자료로 되돌리기</button>
+    <p class="hint">내 자료와 수정본은 이 기기에 저장되고, 구글 드라이브를 연결하면 PC·폰이 함께 맞춰집니다.</p>
+  </div>
+</div>
+
+<!-- 시트(메뉴·드라이브·자료 목록 등) -->
+<div class="modal" id="sheetModal" hidden><div class="sheet" id="sheetBox"></div></div>
+
+<!-- 인쇄 미리보기 -->
+<div class="modal full" id="printModal" hidden>
+  <div class="print-card">
+    <div class="print-head">
+      <b>인쇄 미리보기</b>
+      <button id="printClose" type="button" aria-label="닫기">✕</button>
+    </div>
+    <div class="print-opts">
+      <label>보험사별 <select id="poptMax" data-popt="max">
+        <option value="4">4건</option>
+        <option value="10">10건</option>
+        <option value="20" selected>20건</option>
+        <option value="all">전체</option>
+      </select></label>
+      <label><input type="checkbox" data-popt="notes" checked> 공통 기준</label>
+      <label><input type="checkbox" data-popt="memo" checked> 메모</label>
+    </div>
+    <div class="preview-wrap"><div id="printPreview"></div></div>
+    <div class="print-foot">
+      <button class="btn" id="printCancel" type="button">닫기</button>
+      <button class="btn primary" id="printGo" type="button">🖨 인쇄하기</button>
+    </div>
+  </div>
+</div>
+
+<!-- 원본 이미지 -->
+<div class="modal full lb" id="lbModal" hidden>
+  <div class="lb-box">
+    <div class="lb-bar">
+      <span id="lbTitle"></span>
+      <button id="lbClose" type="button" aria-label="닫기">✕</button>
+    </div>
+    <div class="lb-img"><img id="lbImg" alt=""></div>
+    <div class="lb-foot">
+      <button id="lbPrev" type="button">‹ 이전</button>
+      <button id="lbNext" type="button">다음 ›</button>
+    </div>
+  </div>
+</div>
+
+<!-- 확인 -->
+<div class="modal mid" id="confirmModal" hidden>
+  <div class="confirm-box">
+    <p id="confirmText"></p>
+    <div class="confirm-btns">
+      <button id="confirmNo" type="button">취소</button>
+      <button id="confirmYes" type="button">확인</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" hidden></div>
+<div id="printRoot" class="paper-print"></div>
+<input type="file" id="restorePick" hidden accept="application/json,.json">
+
+<script src="./data.js"></script>
+<script>
+/* ==== core.js ==== */
+'use strict';
+/* ═══════════════════════════════════════════════════════════════
+   예외질환 검색기 — 질병명·질병코드로 보험사별 인수기준 검색
+   자료: 보험사가 GA에 배포한 예외질환·인수기준 표 (2024~2025)
+   개인 메모·내 자료는 이 기기(localStorage)에 저장되고,
+   원하면 구글 드라이브 앱 전용 공간으로 PC·폰이 맞춰집니다.
+   ═══════════════════════════════════════════════════════════════ */
+
+var APP = 'yongwoo-disease';
+var APP_NAME = '예외질환 검색기';
+var APP_VERSION = '1.0.0';
+var KEY_CUSTOM = 'yongwooDisease.custom.v1';
+var KEY_MEMO = 'yongwooDisease.memo.v1';
+var KEY_SYNC = 'yongwooDisease.sync.v1';
+var KEY_DRIVE = 'yongwooDisease.drive.v1';
+var KEY_PREF = 'yongwooDisease.pref.v1';
+var SYNC_FILE = 'yongwoo-disease-sync.json';
+var DRIVE_DEFAULT_CLIENT_ID = '91800638138-023926bb7buaaqi853kdire6j29plj8o.apps.googleusercontent.com';
+var SHOW_ROW = 4;
+
+var DATA = window.DISEASE_DATA;
+var V = DATA.v;
+var SHEETS = DATA.sheets;
+var IMG = DATA.img || {};
+var INS = [];
+var IDX = [];
+var CUSTOM = [];
+var MEMOS = {};
+var state = { q: '', t: '', ins: '', open: {}, recent: [] };
+
+var $ = function (sel, root) { return (root || document).querySelector(sel); };
+var $$ = function (sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); };
+
+function esc(s) {
+  return String(s === undefined || s === null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+function norm(s) { return String(s || '').toLowerCase().replace(/[\s·\-\/(),\[\]{}'"~]+/g, ''); }
+function codesOf(code) {
+  return String(code || '').toLowerCase().split(/[\s,\/~]+/)
+    .map(function (c) { return c.replace(/[^a-z0-9.]/g, ''); }).filter(Boolean);
+}
+function todayStr() {
+  var d = new Date();
+  return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
+}
+function stamp(ms) {
+  if (!ms) return '';
+  var d = new Date(ms);
+  return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
+}
+
+/* ── 같은 질환을 부르는 다른 이름 ─────────────────────── */
+var SYN = [
+  ['대장용종', '결장', '직장', 'd12', '용종', '대장 양성'], ['위용종', '위 양성', 'd13.1'], ['담낭용종', '담낭 양성', 'd13.5', '담낭종양'],
+  ['갑상선', '갑상샘', 'e04', 'e05', 'e06', 'e03', 'd34'], ['갑상선결절', '갑상샘결절', 'e04', '갑상선 양성', 'd34'],
+  ['디스크', '추간판', 'm50', 'm51', '척추'], ['협착', '척추관', 'm48'], ['백내장', 'h25', 'h26'], ['녹내장', 'h40'],
+  ['장염', '위장염', 'a09', 'a04', 'a08', '식중독'], ['위염', 'k29'], ['역류', '식도염', 'k21'], ['위궤양', 'k25', '소화성궤양'],
+  ['자궁근종', '자궁평활근종', 'd25', '자궁 양성'], ['난소낭종', '난소', 'n83'], ['자궁내막증', 'n80'],
+  ['하지정맥류', '정맥류', 'i83'], ['치질', '치핵', 'k64', 'i84', '치루', '항문'], ['치루', 'k60'], ['탈장', 'k40', 'k41', 'k42'],
+  ['고지혈증', '이상지질', 'e78'], ['고혈압', 'i10'], ['당뇨', 'e11', 'e10', 'e14'],
+  ['맹장', '충수', 'k35', 'k36', 'k37'], ['담석', '담낭염', 'k80', 'k81'], ['축농증', '부비동', 'j32', 'j01'], ['비염', 'j30', 'j31'],
+  ['편도', 'j03', 'j35'], ['감기', '비인두', 'j00', '상기도'], ['폐렴', 'j18', 'j15'], ['기관지염', 'j20', 'j40'],
+  ['오십견', '동결견', '유착성', 'm75'], ['회전근개', 'm75.1'], ['손목터널', '수근관', '팔목터널', 'g56.0'], ['족저근막', 'm72.2'],
+  ['무지외반', 'm20.1'], ['대상포진', 'b02'], ['방광염', 'n30'], ['요로결석', '결석', 'n20'], ['전립선', 'n40', 'n41'],
+  ['유방', 'n60', 'n63', 'd24'], ['자궁경부', 'n87', 'n88'], ['사마귀', 'b07'], ['지방종', 'd17'], ['결막염', 'h10'], ['중이염', 'h65', 'h66'],
+  ['이석증', '어지럼', '현훈', 'h81'], ['골절', 's52', 's62', 's82', 's42'], ['염좌', 's93', 's83', 's63', '삠'], ['통풍', 'm10'],
+  ['간염', 'b15', 'b16', 'b18', 'k75'], ['지방간', 'k76.0', 'k70'], ['수면무호흡', '코골이', 'g47.3'], ['편두통', '두통', 'g43', 'r51'],
+  ['무릎', 'm17', 'm23'], ['어깨', 'm75', 's46'], ['손목', 's62', 'g56'], ['발목', 's93'], ['탈구', 's43', 's83'],
+  ['아토피', 'l20'], ['두드러기', 'l50'], ['습진', 'l30'], ['백선', 'b35'], ['결절', 'd34', 'e04'],
+  ['신장', 'n18', 'n28'], ['사구체', 'n00', 'n03'], ['요관', 'n20', 'n13'], ['전립선비대', 'n40'],
+  ['빈혈', 'd50', 'd51', 'd64'], ['백혈병', 'c91', 'c92', 'c93', 'c94', 'c95'], ['림프종', 'c81', 'c82', 'c83', 'c85'],
+  ['갑상선암', 'c73'], ['유방암', 'c50'], ['폐암', 'c34'], ['위암', 'c16'], ['간암', 'c22'], ['대장암', 'c18', 'c19', 'c20'],
+  ['자궁경부암', 'c53'], ['전립선암', 'c61'], ['신장암', 'c64'], ['방광암', 'c67'], ['췌장암', 'c25']
+];
+var QUICK = ['대장용종', '갑상선결절', '디스크', '백내장', '장염', '자궁근종', '하지정맥류', '치질', '고지혈증', 'D12'];
+
+/* ── 자료 색인 ────────────────────────────────────────── */
+function buildAll() {
+  var seen = new Map();
+  SHEETS.forEach(function (s, i) {
+    if (!seen.has(s[0])) seen.set(s[0], { name: s[0], t: s[1], sheets: [], img: null });
+    seen.get(s[0]).sheets.push(i);
+  });
+  Object.keys(IMG).forEach(function (k) {
+    if (!seen.has(k)) seen.set(k, { name: k, t: IMG[k].t, sheets: [], img: IMG[k] });
+    else seen.get(k).img = IMG[k];
+  });
+  INS = Array.from(seen.values()).sort(function (a, b) {
+    if (a.t !== b.t) return a.t === '손보' ? -1 : 1;
+    return a.name.localeCompare(b.name, 'ko');
+  });
+  IDX = DATA.recs.map(function (r, i) {
+    var cols = SHEETS[r[0]][4] || [];
+    var kv = [], parts = [];
+    for (var j = 0; j < r[4].length; j++) {
+      var v = V[r[4][j]] || '';
+      if (v) { kv.push([cols[j] || '항목', v]); parts.push(v); }
+    }
+    return {
+      key: 'r' + i, kind: 'b', s: r[0], ins: SHEETS[r[0]][0], name: r[1], code: r[2], cat: r[3], kv: kv,
+      n: norm(r[1]), c: codesOf(r[2]), catn: norm(r[3]), d: norm(parts.join(' '))
+    };
+  });
+}
+function insOf(name) {
+  for (var i = 0; i < INS.length; i++) if (INS[i].name === name) return INS[i];
+  return null;
+}
+function insType(name) { var x = insOf(name); return x ? x.t : ''; }
+
+/* ── 개인 자료 · 메모 ─────────────────────────────────── */
+function loadLocal() {
+  try { CUSTOM = JSON.parse(localStorage.getItem(KEY_CUSTOM) || '[]'); } catch (e) { CUSTOM = []; }
+  if (!Array.isArray(CUSTOM)) CUSTOM = [];
+  CUSTOM = CUSTOM.filter(function (c) { return c && c.id && c.ins && c.name; });
+  try { MEMOS = JSON.parse(localStorage.getItem(KEY_MEMO) || '{}'); } catch (e) { MEMOS = {}; }
+  if (!MEMOS || typeof MEMOS !== 'object') MEMOS = {};
+  var p = prefs();
+  state.recent = Array.isArray(p.recent) ? p.recent.slice(0, 6) : [];
+}
+function saveCustom() { try { localStorage.setItem(KEY_CUSTOM, JSON.stringify(CUSTOM)); } catch (e) { } bumpRev(); }
+function saveMemos() { try { localStorage.setItem(KEY_MEMO, JSON.stringify(MEMOS)); } catch (e) { } bumpRev(); }
+function prefs() { try { return JSON.parse(localStorage.getItem(KEY_PREF) || '{}') || {}; } catch (e) { return {}; } }
+function setPrefs(p) {
+  var c = prefs();
+  Object.keys(p).forEach(function (k) { c[k] = p[k]; });
+  try { localStorage.setItem(KEY_PREF, JSON.stringify(c)); } catch (e) { }
+}
+function liveCustom() { return CUSTOM.filter(function (c) { return !c.deletedAt; }); }
+function memoTxt(key) { var m = MEMOS[key]; return m && !m.del ? String(m.t || '') : ''; }
+function customEntries() {
+  return liveCustom().map(function (c) {
+    var kv = (c.kv || []).filter(function (p) { return p && (p[0] || p[1]); })
+      .map(function (p) { return [String(p[0] || '항목'), String(p[1] || '')]; });
+    return {
+      key: 'c' + c.id, kind: 'c', id: c.id, s: -1, ins: c.ins, ov: c.ov || '',
+      name: c.name || '', code: c.code || '', cat: c.cat || '', kv: kv, upd: c.upd || 0,
+      n: norm(c.name), c: codesOf(c.code), catn: norm(c.cat),
+      d: norm(kv.map(function (p) { return p[1]; }).join(' '))
+    };
+  });
+}
+function overrideMap() {
+  var m = {};
+  liveCustom().forEach(function (c) { if (c.ov) m[c.ov] = c; });
+  return m;
+}
+function allEntries(ov) {
+  ov = ov || overrideMap();
+  var base = IDX.filter(function (x) { return !ov[x.key]; });
+  return base.concat(customEntries());
+}
+function addRecent(q) {
+  q = String(q || '').trim();
+  if (!q) return;
+  var r = state.recent.filter(function (x) { return x !== q; });
+  r.unshift(q);
+  state.recent = r.slice(0, 6);
+  setPrefs({ recent: state.recent });
+}
+
+/* ── 검색 ─────────────────────────────────────────────── */
+function expand(tok) {
+  var n = norm(tok), out = {};
+  out[n] = 1;
+  if (n.length >= 2) {
+    SYN.forEach(function (g) {
+      var hit = g.some(function (w) {
+        var nw = norm(w);
+        return nw === n || (nw.length >= 2 && n.length >= 3 && nw.indexOf(n) >= 0);
+      });
+      if (hit) g.forEach(function (w) { out[norm(w)] = 1; });
+    });
+  }
+  return Object.keys(out).filter(Boolean);
+}
+function isCode(s) { return /^[a-z]\d{1,2}(\.?\d*)?$/.test(s); }
+
+function scoreOf(x, groups) {
+  var total = 0;
+  for (var gi = 0; gi < groups.length; gi++) {
+    var g = groups[gi], best = 0;
+    for (var wi = 0; wi < g.length; wi++) {
+      var w = g[wi], sc = 0;
+      if (isCode(w)) {
+        var wc = w.replace('.', '');
+        if (x.c.some(function (c) { return c.replace('.', '') === wc; })) sc = 100;
+        else if (x.c.some(function (c) { return c.replace('.', '').indexOf(wc) === 0; })) sc = 85;
+        else if (x.n.indexOf(w) >= 0) sc = 40;
+      } else {
+        if (x.n === w) sc = 100;
+        else if (x.n.indexOf(w) === 0) sc = 85;
+        else if (x.n.indexOf(w) >= 0) sc = 70;
+        else if (x.catn.indexOf(w) >= 0) sc = 30;
+        else if (w.length >= 2 && x.d.indexOf(w) >= 0) sc = 20;
+      }
+      if (sc > best) best = sc;
+      if (best === 100) break;
+    }
+    if (!best) return 0;
+    total += best;
+  }
+  return total / groups.length;
+}
+
+function search() {
+  var q = state.q.trim();
+  if (!q) return { hits: [], none: poolInsurers(), total: 0, query: '' };
+  var groups = q.split(/\s+/).filter(Boolean).map(expand);
+  var ov = overrideMap();
+  var by = new Map();
+  allEntries(ov).forEach(function (x) {
+    if (state.t && insType(x.ins) !== state.t) return;
+    if (state.ins && x.ins !== state.ins) return;
+    var sc = scoreOf(x, groups);
+    if (!sc) return;
+    if (!by.has(x.ins)) by.set(x.ins, []);
+    by.get(x.ins).push({ x: x, sc: sc });
+  });
+  var pool = poolInsurers();
+  var hits = pool.filter(function (p) { return by.has(p.name); }).map(function (p) {
+    var list = by.get(p.name).sort(function (a, b) { return b.sc - a.sc; });
+    return { ins: p, list: list, top: list[0].sc };
+  }).sort(function (a, b) { return (b.top - a.top) || (b.list.length - a.list.length); });
+  var none = pool.filter(function (p) { return !by.has(p.name); });
+  return {
+    hits: hits, none: none, query: q,
+    total: hits.reduce(function (a, h) { return a + h.list.length; }, 0)
+  };
+}
+function poolInsurers() {
+  return INS.filter(function (x) {
+    return (!state.t || x.t === state.t) && (!state.ins || x.name === state.ins);
+  });
+}
+
+/* ── 값 색 구분(인수/조건/불가) ──────────────────────── */
+function statusOf(v) {
+  var s = String(v || '').replace(/\s/g, '');
+  if (!s) return '';
+  if (/^(x|×|ｘ)$/i.test(s)) return 'bad';
+  if (/인수불가|가입불가|거절|미운영|청약불가/.test(s)) return 'bad';
+  if (s.length > 26) return '';
+  if (/부담보|할증|서류|단[,.·]|조건|경과|개월|회한|필수|제한|일부|△|심사|확인/.test(s)) return 'warn';
+  if (/^(o|○|ｏ|y|인수|가능|즉시|즉시인수|전담보|전담보가능|전담보인수|모든담보가입가능|전담보가입)$/i.test(s)) return 'good';
+  return '';
+}
+
+/* ── 동기화 버전 ──────────────────────────────────────── */
+function syncState() {
+  try { return JSON.parse(localStorage.getItem(KEY_SYNC)) || {}; } catch (e) { return {}; }
+}
+function saveSyncState(st) { try { localStorage.setItem(KEY_SYNC, JSON.stringify(st)); } catch (e) { } }
+function bumpRev() {
+  var st = syncState();
+  st.rev = Math.max(Date.now(), (Number(st.rev) || 0) + 1);
+  saveSyncState(st);
+  if (window.DiseaseDrive) DiseaseDrive.markChange();
+}
+
+/* ══════════════ 구글 드라이브 동기화 엔진 ══════════════ */
+function createDriveSync(opt) {
+  var SCOPE = 'https://www.googleapis.com/auth/drive.appdata';
+  var KEY = opt.settingsKey, FILE = opt.fileName;
+  var token = '', tokenExp = 0, gsiPromise = null, running = null, timer = null;
+  var status = 'off', note = '';
+
+  function conf() { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { return {}; } }
+  function setConf(patch) {
+    var c = conf();
+    Object.keys(patch).forEach(function (k) { c[k] = patch[k]; });
+    try { localStorage.setItem(KEY, JSON.stringify(c)); } catch (e) { }
+  }
+  function isOn() { return !!conf().on; }
+  function clientId() { return String(conf().clientId || '').trim() || DRIVE_DEFAULT_CLIENT_ID; }
+  function ago(t) {
+    if (!t) return '';
+    var d = Date.now() - t;
+    if (d < 60000) return '방금';
+    if (d < 3600000) return Math.floor(d / 60000) + '분 전';
+    if (d < 86400000) return Math.floor(d / 3600000) + '시간 전';
+    return Math.floor(d / 86400000) + '일 전';
+  }
+  function label() {
+    if (running) return '동기화 중…';
+    if (!isOn()) return '미연결';
+    if (status === 'offline') return '오프라인';
+    if (status === 'auth') return '연결 확인 필요';
+    if (status === 'error') return '동기화 오류';
+    var t = Number(conf().lastSyncAt) || 0;
+    return t ? '연결됨 · ' + ago(t) + ' 동기화' : '연결됨 · 동기화 대기';
+  }
+  function paint() { try { if (opt.onStatus) opt.onStatus(label(), status, note); } catch (e) { } }
+  function setStatus(s, msg) { status = s; if (msg !== undefined) note = msg; paint(); }
+
+  function loadGis() {
+    if (window.google && window.google.accounts && window.google.accounts.oauth2) return Promise.resolve();
+    if (gsiPromise) return gsiPromise;
+    gsiPromise = new Promise(function (resolve, reject) {
+      if (!navigator.onLine) { reject(new Error('offline')); return; }
+      var s = document.createElement('script');
+      s.src = 'https://accounts.google.com/gsi/client';
+      s.async = true; s.defer = true;
+      s.onload = function () {
+        if (window.google && window.google.accounts && window.google.accounts.oauth2) resolve();
+        else { gsiPromise = null; reject(new Error('gsi-unavailable')); }
+      };
+      s.onerror = function () { gsiPromise = null; reject(new Error('gsi-failed')); };
+      document.head.appendChild(s);
+    });
+    return gsiPromise;
+  }
+  function askToken(interactive) {
+    return loadGis().then(function () {
+      return new Promise(function (resolve, reject) {
+        var done = false;
+        function finish(err, tk) { if (done) return; done = true; if (tk) resolve(tk); else reject(err || new Error('no-token')); }
+        try {
+          var client = window.google.accounts.oauth2.initTokenClient({
+            client_id: clientId(),
+            scope: SCOPE,
+            callback: function (resp) {
+              if (resp && resp.access_token) {
+                token = resp.access_token;
+                tokenExp = Date.now() + (Number(resp.expires_in) || 3600) * 1000 - 90000;
+                finish(null, token);
+              } else finish(new Error(resp && resp.error ? resp.error : 'no-token'));
+            },
+            error_callback: function (err) { finish(new Error(err && err.type ? err.type : 'popup')); }
+          });
+          client.requestAccessToken({ prompt: interactive ? 'consent' : '' });
+        } catch (e) { finish(e); }
+      });
+    });
+  }
+  function ensureToken(interactive) {
+    if (token && Date.now() < tokenExp) return Promise.resolve(token);
+    return askToken(interactive);
+  }
+  function timeoutFetch(url, o) {
+    o = o || {};
+    if (window.AbortController) {
+      var ac = new AbortController();
+      o.signal = ac.signal;
+      var tm = setTimeout(function () { try { ac.abort(); } catch (e) { } }, 90000);
+      return fetch(url, o).then(function (r) { clearTimeout(tm); return r; }, function (e) { clearTimeout(tm); throw e; });
+    }
+    return fetch(url, o);
+  }
+  function api(url, o) {
+    o = o || {}; o.headers = o.headers || {};
+    return ensureToken(false).then(function (tk) {
+      o.headers.Authorization = 'Bearer ' + tk;
+      return timeoutFetch(url, o);
+    }).then(function (res) {
+      if (res.status !== 401) return res;
+      token = '';
+      return ensureToken(false).then(function (tk) {
+        o.headers.Authorization = 'Bearer ' + tk;
+        return timeoutFetch(url, o);
+      });
+    });
+  }
+  function needOk(res) { if (!res.ok) throw new Error('http-' + res.status); return res.json().catch(function () { return {}; }); }
+  function findFile() {
+    var q = encodeURIComponent("name = '" + FILE + "' and trashed = false");
+    var url = 'https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&pageSize=5&orderBy=modifiedTime desc&q=' + q +
+      '&fields=' + encodeURIComponent('files(id,name,modifiedTime,size)');
+    return api(url).then(needOk).then(function (j) { return (j && j.files && j.files[0]) || null; });
+  }
+  function download(id) {
+    return api('https://www.googleapis.com/drive/v3/files/' + encodeURIComponent(id) + '?alt=media').then(function (res) {
+      if (!res.ok) throw new Error('http-' + res.status);
+      return res.text();
+    });
+  }
+  function upload(text, fileId) {
+    if (fileId) {
+      return api('https://www.googleapis.com/upload/drive/v3/files/' + encodeURIComponent(fileId) + '?uploadType=media', {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json; charset=UTF-8' }, body: text
+      }).then(needOk);
+    }
+    var b = 'yongwoo' + Date.now().toString(36);
+    var body = '--' + b + '\r\n' +
+      'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
+      JSON.stringify({ name: FILE, parents: ['appDataFolder'], mimeType: 'application/json' }) + '\r\n' +
+      '--' + b + '\r\n' +
+      'Content-Type: application/json; charset=UTF-8\r\n\r\n' + text + '\r\n' +
+      '--' + b + '--';
+    return api('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id', {
+      method: 'POST', headers: { 'Content-Type': 'multipart/related; boundary=' + b }, body: body
+    }).then(needOk);
+  }
+  function push(payload, fileId) {
+    if (!payload.rev) payload.rev = Date.now();
+    return upload(JSON.stringify(payload), fileId).then(function () {
+      setConf({ lastSyncRev: Number(payload.rev) || 0, lastSyncAt: Date.now() });
+      setStatus('on');
+      return payload;
+    });
+  }
+  function merge(local, remote) {
+    var out = { app: local.app, version: local.version, rev: Date.now(), items: [], deleted: {} };
+    var del = {};
+    [local.deleted || {}, remote.deleted || {}].forEach(function (d) {
+      Object.keys(d).forEach(function (k) { del[k] = Math.max(Number(del[k]) || 0, Number(d[k]) || 0); });
+    });
+    var pick = {}, order = [];
+    [local.items || [], remote.items || []].forEach(function (arr) {
+      arr.forEach(function (it) {
+        if (!it || !it.id) return;
+        if (!pick[it.id]) { pick[it.id] = it; order.push(it.id); return; }
+        if ((Number(it.upd) || 0) > (Number(pick[it.id].upd) || 0)) pick[it.id] = it;
+      });
+    });
+    order.forEach(function (id) {
+      var it = pick[id];
+      if (del[id] && del[id] > (Number(it.upd) || 0)) { return; }
+      out.items.push(it);
+      delete del[id];
+    });
+    out.deleted = del;
+    return out;
+  }
+  function run() {
+    return findFile().then(function (f) {
+      if (!f) {
+        return Promise.resolve(opt.build()).then(function (local) { return push(local, null); }).then(function () { return true; });
+      }
+      return download(f.id).then(function (text) {
+        var remote = null;
+        try { remote = JSON.parse(text); } catch (e) { remote = null; }
+        if (!remote || remote.app !== opt.app || !Array.isArray(remote.items)) {
+          return Promise.resolve(opt.build()).then(function (local) { return push(local, f.id); }).then(function () { return true; });
+        }
+        var lastRev = Number(conf().lastSyncRev) || 0;
+        var localRev = Number(opt.rev()) || 0;
+        var remoteRev = Number(remote.rev) || 0;
+        var localChanged = localRev > lastRev;
+        var remoteChanged = remoteRev > lastRev;
+        if (!localChanged && !remoteChanged) { setConf({ lastSyncAt: Date.now() }); setStatus('on'); return true; }
+        if (remoteChanged && !localChanged) {
+          return Promise.resolve(opt.apply(remote)).then(function () {
+            setConf({ lastSyncRev: remoteRev, lastSyncAt: Date.now() }); setStatus('on'); return true;
+          });
+        }
+        if (localChanged && !remoteChanged) {
+          return Promise.resolve(opt.build()).then(function (local) { return push(local, f.id); }).then(function () { return true; });
+        }
+        return Promise.resolve(opt.build()).then(function (local) {
+          var merged = merge(local, remote);
+          return Promise.resolve(opt.apply(merged)).then(function () { return push(merged, f.id); }).then(function () { return true; });
+        });
+      });
+    });
+  }
+  function sync(manual) {
+    if (running) return running;
+    if (!isOn()) { paint(); return Promise.resolve(false); }
+    if (!navigator.onLine) { setStatus('offline'); return Promise.resolve(false); }
+    running = run().then(function () { running = null; setStatus('on'); return true; }).catch(function (err) {
+      running = null;
+      var m = String((err && err.message) || err || '');
+      if (!navigator.onLine || m === 'offline' || m === 'gsi-failed' || m === 'Failed to fetch' || m === 'Load failed' || m === 'http-0') setStatus('offline', m);
+      else if (m === 'popup' || m === 'popup_failed_to_open' || m === 'access_denied' || m === 'interaction_required' || m === 'no-token') setStatus('auth', m);
+      else setStatus('error', m);
+      return false;
+    });
+    setStatus('syncing');
+    return running;
+  }
+  function connect() {
+    if (!navigator.onLine) { setStatus('offline'); return Promise.reject(new Error('offline')); }
+    setStatus('syncing');
+    return loadGis().then(function () { return askToken(true); }).then(function () {
+      setConf({ on: true, lastSyncRev: 0 });
+      return sync(true);
+    }).catch(function (err) {
+      setConf({ on: false });
+      var m = String((err && err.message) || '');
+      if (!navigator.onLine) setStatus('offline', m);
+      else if (m === 'gsi-failed' || m === 'gsi-unavailable') setStatus('error', m);
+      else setStatus('auth', m);
+      throw err;
+    });
+  }
+  function disconnect() {
+    setConf({ on: false, lastSyncRev: 0 });
+    token = ''; tokenExp = 0;
+    if (timer) { clearTimeout(timer); timer = null; }
+    setStatus('off');
+    return Promise.resolve(true);
+  }
+  function markChange() {
+    if (!isOn()) return;
+    if (!navigator.onLine) { setStatus('offline'); return; }
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(function () { timer = null; sync(false); }, 1200);
+  }
+  function init() {
+    paint();
+    window.addEventListener('online', function () { if (isOn()) sync(false); else paint(); });
+    window.addEventListener('offline', function () { if (isOn()) setStatus('offline'); });
+    document.addEventListener('visibilitychange', function () { if (!document.hidden && isOn()) sync(false); });
+    window.addEventListener('focus', function () { if (isOn() && !document.hidden) sync(false); });
+    if (isOn()) setTimeout(function () { sync(false); }, 1800);
+    setInterval(function () { if (!running) paint(); }, 60000);
+  }
+  return {
+    init: init, sync: sync, connect: connect, disconnect: disconnect, markChange: markChange,
+    isOn: isOn, label: label, refresh: paint,
+    status: function () { return status; }, ago: ago, clientId: clientId,
+    setClientId: function (v) { setConf({ clientId: String(v || '').trim() }); paint(); },
+    lastSyncAt: function () { return Number(conf().lastSyncAt) || 0; }
+  };
+}
+
+/* ── 내 자료 ↔ 드라이브 파일 ─────────────────────────── */
+function syncBuild() {
+  var st = syncState();
+  var now = Date.now();
+  var del = st.deleted || (st.deleted = {});
+  var known = st.known || (st.known = {});
+  var kI = known.items || (known.items = {});
+  var ids = {}, items = [];
+  liveCustom().forEach(function (c) {
+    ids[c.id] = 1;
+    delete del[c.id];
+    items.push({
+      kind: 'custom', id: c.id, ins: c.ins, name: c.name, code: c.code, cat: c.cat,
+      kv: c.kv || [], ov: c.ov || '', createdAt: c.createdAt || 0,
+      upd: Math.max(Number(c.upd) || 0, Number(c.createdAt) || 0)
+    });
+  });
+  Object.keys(MEMOS).forEach(function (k) {
+    var m = MEMOS[k];
+    if (!m || m.del || !String(m.t || '').trim()) return;
+    var id = 'm:' + k;
+    ids[id] = 1;
+    delete del[id];
+    items.push({ kind: 'memo', id: id, key: k, t: m.t, upd: Number(m.upd) || 0 });
+  });
+  Object.keys(kI).forEach(function (id) { if (!ids[id] && !del[id]) del[id] = now; });
+  known.items = ids;
+  st.deleted = del; st.known = known;
+  saveSyncState(st);
+  return { app: APP, version: 1, rev: Number(st.rev) || 0, items: items, deleted: del };
+}
+function syncApply(p) {
+  var custom = [], memos = {};
+  (p.items || []).forEach(function (it) {
+    if (!it || !it.id) return;
+    if (it.kind === 'custom' && it.ins && it.name) {
+      custom.push({
+        id: String(it.id), ins: it.ins, name: it.name, code: it.code || '', cat: it.cat || '',
+        kv: Array.isArray(it.kv) ? it.kv : [], ov: it.ov || '',
+        createdAt: Number(it.createdAt) || Number(it.upd) || Date.now(), upd: Number(it.upd) || 0
+      });
+    } else if (it.kind === 'memo' && it.key) {
+      memos[it.key] = { t: String(it.t || ''), upd: Number(it.upd) || 0 };
+    }
+  });
+  var st = syncState();
+  st.rev = Number(p.rev) || Date.now();
+  st.deleted = {};
+  Object.keys(p.deleted || {}).forEach(function (k) { st.deleted[k] = Number(p.deleted[k]) || 0; });
+  st.known = { items: {} };
+  custom.forEach(function (c) { st.known.items[c.id] = 1; if (st.deleted[c.id]) delete st.deleted[c.id]; });
+  Object.keys(memos).forEach(function (k) { st.known.items['m:' + k] = 1; if (st.deleted['m:' + k]) delete st.deleted['m:' + k]; });
+  saveSyncState(st);
+  CUSTOM = custom;
+  MEMOS = memos;
+  try { localStorage.setItem(KEY_CUSTOM, JSON.stringify(CUSTOM)); } catch (e) { }
+  try { localStorage.setItem(KEY_MEMO, JSON.stringify(MEMOS)); } catch (e) { }
+  render();
+  return true;
+}
+var DiseaseDrive = createDriveSync({
+  app: APP,
+  settingsKey: KEY_DRIVE,
+  fileName: SYNC_FILE,
+  rev: function () { return Number(syncState().rev) || 0; },
+  build: syncBuild,
+  apply: syncApply,
+  onStatus: function (text, st) { if (window.paintDrive) paintDrive(text, st); }
+});
+
+/* ==== ui.js ==== */
+'use strict';
+/* ══════════════ 예외질환 검색기 화면 ══════════════ */
+
+var ED = { mode: '', id: '', baseKey: '', ins: '' };
+var LB = { ins: '', i: 0 };
+var PRINT = { max: '20', notes: true, memo: true };
+var toastTimer = null;
+
+function toast(t) {
+  var el = $('#toast');
+  el.textContent = t;
+  el.hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function () { el.hidden = true; }, 2600);
+}
+function openModal(id) { $(id).hidden = false; document.body.classList.add('locked'); }
+function closeModal(id) { $(id).hidden = true; if (!$$('.modal').some(function (m) { return !m.hidden; }) && $('#editor').hidden) document.body.classList.remove('locked'); }
+
+/* ── 강조 표시 ───────────────────────────────────────── */
+function escRe(c) { return c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+function hl(text, groups) {
+  text = String(text || '');
+  if (!groups || !groups.length || !text) return esc(text);
+  var words = [];
+  groups.forEach(function (g) {
+    g.forEach(function (w) { if (w.length >= 2 && !isCode(w)) words.push(w); });
+  });
+  words = words.filter(function (w, i) { return words.indexOf(w) === i; })
+    .sort(function (a, b) { return b.length - a.length; });
+  if (!words.length) return esc(text);
+  var re;
+  try {
+    re = new RegExp('(' + words.map(function (w) { return w.split('').map(escRe).join('\\s*'); }).join('|') + ')', 'gi');
+  } catch (e) { return esc(text); }
+  var out = '', last = 0, m;
+  while ((m = re.exec(text))) {
+    if (!m[0]) { re.lastIndex++; continue; }
+    out += esc(text.slice(last, m.index)) + '<mark>' + esc(m[0]) + '</mark>';
+    last = m.index + m[0].length;
+  }
+  return out + esc(text.slice(last));
+}
+
+/* ── 결과 요약 ───────────────────────────────────────── */
+function renderSummary(res) {
+  var box = $('#summary');
+  if (!res.query) { box.innerHTML = ''; return; }
+  var hits = res.hits;
+  var html = '<div class="summary card">' +
+    '<h2>“' + esc(res.query) + '” <span class="sm-t">— ' + hits.length + '개 보험사에서 <b>' +
+    res.total.toLocaleString() + '건</b></span></h2>';
+  if (hits.length) {
+    html += '<div class="hitrow">' + hits.map(function (h) {
+      var imgOnly = !h.list.length;
+      return '<button type="button" class="hit" data-go="' + esc(h.ins.name) + '">' +
+        '<span class="dot ' + (h.ins.t === '손보' ? 'son' : 'saeng') + '"></span>' +
+        esc(h.ins.name) + '<i>' + h.list.length + '건</i></button>';
+    }).join('') + '</div>';
+  }
+  if (res.none.length) {
+    html += '<div class="misslabel">자료에서 못 찾은 보험사 — 가입 불가라는 뜻은 아니에요</div>' +
+      '<div class="hitrow">' + res.none.map(function (p) {
+        return '<span class="hit none"><span class="dot ' + (p.t === '손보' ? 'son' : 'saeng') + '"></span>' +
+          esc(p.name) + '<i>' + (p.img && p.img.only ? '원본 이미지' : '0건') + '</i></span>';
+      }).join('') + '</div>';
+  }
+  if (hits.length) {
+    html += '<div class="legend"><span class="lg good">인수</span><span class="lg warn">조건·부담보·서류</span><span class="lg bad">불가·거절</span></div>';
+  }
+  box.innerHTML = html + '</div>';
+}
+
+/* ── 보험사 카드 ─────────────────────────────────────── */
+function notesHTML(ins) {
+  var parts = ins.sheets.map(function (i) { return SHEETS[i]; }).filter(function (s) { return s[3] && s[3].length; });
+  if (!parts.length) return '<div class="notes"><p class="notes-empty">이 보험사 자료에는 따로 적힌 공통 기준이 없어요.</p></div>';
+  return '<div class="notes">' + parts.map(function (s) {
+    return '<h4>' + esc(s[2]) + '</h4><ul>' + s[3].map(function (n) { return '<li>' + esc(n) + '</li>'; }).join('') + '</ul>';
+  }).join('') + '</div>';
+}
+function imgsHTML(name) {
+  var m = IMG[name];
+  if (!m) return '';
+  return '<div class="imgs">' + m.files.map(function (f, i) {
+    return '<button type="button" class="imgbtn" data-lb="' + esc(name) + '" data-i="' + i + '" aria-label="' + esc(name) + ' 원본 ' + (i + 1) + '쪽 크게 보기">' +
+      '<img src="' + f + '" alt="" loading="lazy" decoding="async"></button>';
+  }).join('') + '</div>';
+}
+function rowHTML(o, groups, showSub) {
+  var x = o.x;
+  var memo = memoTxt(x.key);
+  var badge = x.kind === 'c' ? (x.ov ? '<span class="mine ov">내 수정본</span>' : '<span class="mine">내 자료</span>') : '';
+  var src = (showSub && x.kind === 'b' && x.s >= 0) ? '<span class="src">' + esc(SHEETS[x.s][2]) + '</span>' : '';
+  var kv = x.kv.length ? '<dl class="kv">' + x.kv.map(function (p) {
+    var st = statusOf(p[1]);
+    return '<div class="kvp' + (st ? ' ' + st : '') + (p[1].length > 40 ? ' wide' : '') + '">' +
+      '<dt>' + esc(p[0]) + '</dt><dd>' + esc(p[1]) + '</dd></div>';
+  }).join('') + '</dl>' : '';
+  return '<div class="row' + (x.kind === 'c' ? ' mine' : '') + '">' +
+    '<div class="row-t">' +
+      '<span class="row-id">' +
+      (x.name ? '<span class="nm">' + hl(x.name, groups) + '</span>' : '') +
+      (x.code ? '<span class="code">' + hl(x.code, groups) + '</span>' : '') +
+      (x.cat ? '<span class="cat">' + hl(x.cat, groups) + '</span>' : '') +
+      src + badge + '</span>' +
+      '<span class="row-acts">' +
+        '<button type="button" class="mini' + (memo ? ' has' : '') + '" data-memo="' + esc(x.key) + '">' + (memo ? '📝 메모' : '＋메모') + '</button>' +
+        '<button type="button" class="mini" data-edit="' + esc(x.key) + '">수정</button>' +
+      '</span>' +
+    '</div>' + kv +
+    (memo ? '<div class="rowmemo"><b>메모</b> ' + esc(memo).replace(/\n/g, '<br>') + '</div>' : '') +
+    '</div>';
+}
+function cardHTML(h, groups) {
+  var p = h.ins, key = p.name;
+  var lim = state.open[key + '|more'] ? h.list.length : SHOW_ROW;
+  var multi = p.sheets.length > 1;
+  return '<article class="card ins" id="c-' + esc(key) + '">' +
+    '<div class="card-h">' +
+      '<h3>' + esc(key) + '</h3>' +
+      '<span class="kind ' + (p.t === '손보' ? 'son' : 'saeng') + '">' + (p.t === '손보' ? '손해보험' : '생명보험') + '</span>' +
+      '<span class="count">' + h.list.length + '건</span>' +
+    '</div>' +
+    '<div class="card-acts">' +
+      '<button type="button" class="act' + (state.open[key + '|n'] ? ' on' : '') + '" data-notes="' + esc(key) + '">' +
+        (state.open[key + '|n'] ? '공통 기준 닫기' : '공통 기준 보기') + '</button>' +
+      (IMG[key] ? '<button type="button" class="act' + (state.open[key + '|i'] ? ' on' : '') + '" data-img="' + esc(key) + '">' +
+        (state.open[key + '|i'] ? '원본 닫기' : '원본 이미지') + '</button>' : '') +
+      '<button type="button" class="act add" data-add="' + esc(key) + '">＋ 내 자료</button>' +
+    '</div>' +
+    (state.open[key + '|n'] ? notesHTML(p) : '') +
+    (state.open[key + '|i'] ? imgsHTML(key) : '') +
+    '<div class="rows">' + h.list.slice(0, lim).map(function (o) { return rowHTML(o, groups, multi); }).join('') + '</div>' +
+    (h.list.length > SHOW_ROW ? '<button type="button" class="more" data-more="' + esc(key) + '">' +
+      (state.open[key + '|more'] ? '접기' : '나머지 ' + (h.list.length - SHOW_ROW) + '건 더 보기') + '</button>' : '') +
+    '</article>';
+}
+function imgOnlyCard(p) {
+  return '<article class="card ins imgonly" id="c-' + esc(p.name) + '">' +
+    '<div class="card-h"><h3>' + esc(p.name) + '</h3><span class="kind ' + (p.t === '손보' ? 'son' : 'saeng') + '">' +
+      (p.t === '손보' ? '손해보험' : '생명보험') + '</span><span class="count">원본 이미지</span></div>' +
+    '<p class="hint">' + esc(p.name) + ' 자료는 그림(PDF 캡처)으로만 와서 글자로는 검색되지 않아요. 아래 원본을 눌러 직접 확인해 주세요. ' + esc(p.img.sub) + '</p>' +
+    imgsHTML(p.name) + '</article>';
+}
+
+function emptyState() {
+  var nSon = INS.filter(function (x) { return x.t === '손보'; }).length;
+  var nSaeng = INS.filter(function (x) { return x.t === '생보'; }).length;
+  var recent = state.recent.length ? '<div class="rec-row"><span class="rec-l">최근 검색</span>' +
+    state.recent.map(function (q) { return '<button type="button" class="chip ghost" data-q="' + esc(q) + '">' + esc(q) + '</button>'; }).join('') + '</div>' : '';
+  return '<div class="card welcome">' +
+    '<h2>병명이나 질병코드를 넣어 보세요</h2>' +
+    '<p>예) <b>대장용종</b>, <b>갑상선결절</b>, <b>디스크</b>처럼 병명을 적거나 <b>D12</b>, <b>K63.5</b>처럼 질병분류코드(KCD)를 넣으면 보험사별 인수기준을 한 번에 보여 드려요.</p>' +
+    '<p class="hint">손해보험 ' + nSon + '곳 · 생명보험 ' + nSaeng + '곳 자료 · 모두 ' +
+      DATA.meta.recs.toLocaleString() + '건이 들어 있어요.</p>' + recent + '</div>';
+}
+function noHitState() {
+  return '<div class="card welcome"><h2>일치하는 질환을 못 찾았어요</h2>' +
+    '<p>병명을 짧게(예: “갑상선”), 띄어쓰기를 빼거나, 질병코드 앞부분(예: “K35”)으로 다시 찾아보세요.</p>' +
+    '<p class="hint">자료에 없다고 가입이 안 되는 것은 아니에요. 병명이 다르게 적혀 있을 수 있어요.</p></div>';
+}
+
+function render() {
+  var res = search();
+  renderSummary(res);
+  var box = $('#results');
+  if (!res.query) { box.innerHTML = emptyState(); return; }
+  var html = '';
+  if (!res.hits.length) html = noHitState();
+  var groups = res.query.split(/\s+/).filter(Boolean).map(expand);
+  html += res.hits.map(function (h) { return cardHTML(h, groups); }).join('');
+  var imgOnly = poolInsurers().filter(function (p) { return p.img && p.img.only && !res.hits.some(function (h) { return h.ins.name === p.name; }); });
+  html += imgOnly.map(imgOnlyCard).join('');
+  box.innerHTML = html;
+  $('#fab').hidden = false;
+}
+
+/* ── 필터 · 검색 입력 ────────────────────────────────── */
+function setQuery(v, doFocus) {
+  state.q = v;
+  state.open = {};
+  var q = $('#q');
+  if (q.value !== v) q.value = v;
+  $('#clear').hidden = !v;
+  render();
+  if (doFocus) q.focus();
+}
+function refreshChips() {
+  var box = $('#tags');
+  var list = QUICK.slice();
+  if (state.recent.length) list = list.concat(state.recent.filter(function (r) { return QUICK.indexOf(r) < 0; }).slice(0, 3));
+  box.innerHTML = list.map(function (t) {
+    return '<button type="button" class="chip" data-q="' + esc(t) + '">' + esc(t) + '</button>';
+  }).join('');
+}
+function syncSeg() {
+  $$('.seg button').forEach(function (b) { b.setAttribute('aria-pressed', String((b.getAttribute('data-t') || '') === state.t)); });
+}
+function fillInsSelect() {
+  var sel = $('#ins');
+  var html = '<option value="">모든 보험사</option>';
+  ['손보', '생보'].forEach(function (t) {
+    var list = INS.filter(function (x) { return x.t === t; });
+    if (!list.length) return;
+    html += '<optgroup label="' + (t === '손보' ? '손해보험' : '생명보험') + '">' +
+      list.map(function (x) { return '<option value="' + esc(x.name) + '">' + esc(x.name) + '</option>'; }).join('') + '</optgroup>';
+  });
+  sel.innerHTML = html;
+}
+
+/* ── 카드 안 동작 ────────────────────────────────────── */
+function toggle(key, flag) {
+  state.open[key + flag] = !state.open[key + flag];
+  render();
+}
+
+/* ── 메모 ─────────────────────────────────────────────── */
+function openMemo(key) {
+  var t = memoTxt(key);
+  openSheet('memo', '📝 질환 메모', '' +
+    '<p class="sheet-note">이 질환 기준에 대한 내 메모입니다. 검색 결과와 인쇄에 함께 나옵니다.</p>' +
+    '<textarea id="memoText" class="inp" rows="6" placeholder="예) 성종락 고객 2024년 3월 용종 2개 제거, 5년내 2회라 전기간 부담보">' + esc(t) + '</textarea>' +
+    '<div class="sheet-btns">' +
+      (t ? '<button type="button" class="btn danger-line" id="memoDel">삭제</button>' : '') +
+      '<button type="button" class="btn primary" id="memoSave">저장</button>' +
+    '</div>');
+  $('#memoSave').addEventListener('click', function () {
+    var v = $('#memoText').value.trim();
+    if (!v) { delete MEMOS[key]; }
+    else MEMOS[key] = { t: v, upd: Date.now() };
+    saveMemos();
+    closeModal('#sheetModal');
+    render();
+    toast(v ? '메모를 저장했습니다' : '메모를 지웠습니다');
+  });
+  var del = $('#memoDel');
+  if (del) del.addEventListener('click', function () {
+    delete MEMOS[key];
+    saveMemos();
+    closeModal('#sheetModal');
+    render();
+    toast('메모를 지웠습니다');
+  });
+}
+
+/* ── 내 자료 편집기 ──────────────────────────────────── */
+function kvRowHTML(k, v) {
+  return '<div class="kvrow"><input class="k" type="text" placeholder="항목 (예: 경과기간)" value="' + esc(k) + '" aria-label="항목">' +
+    '<input class="v" type="text" placeholder="기준 (예: 3개월)" value="' + esc(v) + '" aria-label="기준">' +
+    '<button type="button" class="kvdel" aria-label="이 항목 지우기">✕</button></div>';
+}
+function openEditor(opt) {
+  ED = { mode: opt.mode || 'new', id: opt.id || '', baseKey: opt.baseKey || '', ins: opt.ins || INS[0].name };
+  var name = '', code = '', cat = '', kv = [], title = '내 자료 추가';
+  var memo = '';
+  if (ED.mode === 'edit') {
+    var c = CUSTOM.filter(function (x) { return x.id === ED.id; })[0];
+    if (!c) return;
+    ED.ins = c.ins; name = c.name; code = c.code; cat = c.cat; kv = c.kv || [];
+    title = '내 자료 수정';
+    memo = memoTxt('c' + c.id);
+  } else if (ED.mode === 'override') {
+    var base = allEntries({}) .filter(function (x) { return x.key === ED.baseKey; })[0];
+    if (!base) return;
+    ED.ins = base.ins; name = base.name; code = base.code; cat = base.cat; kv = base.kv;
+    title = '기준 수정 (내 수정본)';
+  } else {
+    var q = state.q.trim();
+    if (q && !isCode(norm(q)) && q.length <= 40) name = q;
+    kv = [['', ''], ['', '']];
+  }
+  var insOpts = INS.map(function (x) {
+    return '<option value="' + esc(x.name) + '"' + (x.name === ED.ins ? ' selected' : '') + '>' + esc(x.name) + ' (' + (x.t === '손보' ? '손해' : '생명') + ')</option>';
+  }).join('');
+  $('#edBarTitle').textContent = title;
+  $('#edIns').innerHTML = insOpts;
+  $('#edName').value = name;
+  $('#edCode').value = code;
+  $('#edCat').value = cat;
+  $('#edKv').innerHTML = (kv.length ? kv : [['', '']]).map(function (p) { return kvRowHTML(p[0], p[1]); }).join('');
+  $('#edNote').value = memo;
+  $('#edDelete').hidden = ED.mode !== 'edit';
+  $('#edRevert').hidden = !(ED.mode === 'edit' && (CUSTOM.filter(function (x) { return x.id === ED.id; })[0] || {}).ov);
+  $('#editor').hidden = false;
+  document.body.classList.add('locked');
+  setTimeout(function () { $('#edName').focus(); }, 60);
+}
+function closeEditor() {
+  $('#editor').hidden = true;
+  document.body.classList.remove('locked');
+}
+function collectKv() {
+  var out = [];
+  $$('#edKv .kvrow').forEach(function (r) {
+    var k = $('.k', r).value.trim(), v = $('.v', r).value.trim();
+    if (k || v) out.push([k || '항목', v]);
+  });
+  return out;
+}
+function saveEditor() {
+  var ins = $('#edIns').value;
+  var name = $('#edName').value.trim();
+  var code = $('#edCode').value.trim();
+  var cat = $('#edCat').value.trim();
+  var kv = collectKv();
+  var note = $('#edNote').value.trim();
+  if (!ins) { toast('보험사를 골라 주세요'); return; }
+  if (!name) { toast('질병명을 적어 주세요'); $('#edName').focus(); return; }
+  var now = Date.now();
+  if (ED.mode === 'edit') {
+    var c = CUSTOM.filter(function (x) { return x.id === ED.id; })[0];
+    if (!c) return;
+    c.ins = ins; c.name = name; c.code = code; c.cat = cat; c.kv = kv; c.upd = now;
+    if (note) MEMOS['c' + c.id] = { t: note, upd: now }; else delete MEMOS['c' + c.id];
+  } else {
+    var id = uid();
+    CUSTOM.push({
+      id: id, ins: ins, name: name, code: code, cat: cat, kv: kv,
+      ov: ED.mode === 'override' ? ED.baseKey : '', createdAt: now, upd: now
+    });
+    if (note) MEMOS['c' + id] = { t: note, upd: now };
+  }
+  saveCustom();
+  saveMemos();
+  closeEditor();
+  state.open = {};
+  if (ED.mode === 'new') {
+    state.q = name;
+    $('#q').value = name;
+    $('#clear').hidden = false;
+  }
+  render();
+  toast(ED.mode === 'edit' ? '내 자료를 고쳤습니다' : '내 자료로 추가했습니다');
+}
+function deleteEditorEntry() {
+  var c = CUSTOM.filter(function (x) { return x.id === ED.id; })[0];
+  if (!c) return;
+  askConfirm('이 내 자료를 지울까요?' + (c.ov ? '<br><span class="cf-sub">지우면 원래 보험사 자료가 다시 나옵니다.</span>' : ''), '지우기', true).then(function (ok) {
+    if (!ok) return;
+    c.deletedAt = Date.now();
+    c.upd = Date.now();
+    delete MEMOS['c' + c.id];
+    saveCustom();
+    saveMemos();
+    closeEditor();
+    render();
+    toast('지웠습니다');
+  });
+}
+function revertOverride() {
+  var c = CUSTOM.filter(function (x) { return x.id === ED.id; })[0];
+  if (!c) return;
+  askConfirm('수정본을 지우고 보험사 원래 자료로 되돌릴까요?', '되돌리기', true).then(function (ok) {
+    if (!ok) return;
+    c.deletedAt = Date.now();
+    c.upd = Date.now();
+    saveCustom();
+    closeEditor();
+    render();
+    toast('원래 자료로 돌아갔습니다');
+  });
+}
+
+/* ── 시트 ─────────────────────────────────────────────── */
+function openSheet(kind, title, inner) {
+  $('#sheetBox').innerHTML = '<div class="sheet-head"><h2>' + esc(title) + '</h2>' +
+    '<button type="button" id="sheetClose" aria-label="닫기">✕</button></div>' + inner;
+  openModal('#sheetModal');
+  $('#sheetClose').addEventListener('click', function () { closeModal('#sheetModal'); });
+}
+function openMenu() {
+  var nC = liveCustom().length, nM = Object.keys(MEMOS).filter(function (k) { return memoTxt(k); }).length;
+  openSheet('menu', '메뉴', '' +
+    row('📚', '자료 목록', '보험사별 자료와 건수', 'mList') +
+    row('📝', '내 자료 · 내 메모', nC + '건 · ' + nM + '건', 'mMine') +
+    row('🖨', '인쇄 미리보기', '지금 검색 결과를 A4로', 'mPrint') +
+    row('💾', '백업 파일로 저장', '내 자료·메모를 JSON 하나로', 'mExport') +
+    row('📥', '백업 복원', '백업 파일 불러오기', 'mImport') +
+    row('☁️', '구글 드라이브', DiseaseDrive.label(), 'mDrive') +
+    row('ℹ️', '사용 안내 · 자료 출처', 'v' + APP_VERSION, 'mHelp'));
+}
+function row(ico, t, sub, act) {
+  return '<button type="button" class="sheet-row" data-sheet="' + act + '"><span class="sr-l"><span class="sr-ico">' + ico + '</span>' +
+    '<span class="sr-tx">' + esc(t) + '<small>' + esc(sub) + '</small></span></span><span class="sr-v">›</span></button>';
+}
+function openList() {
+  var html = '';
+  ['손보', '생보'].forEach(function (t) {
+    var list = INS.filter(function (x) { return x.t === t; });
+    html += '<div class="sheet-sec">' + (t === '손보' ? '손해보험' : '생명보험') + ' ' + list.length + '곳</div>';
+    list.forEach(function (p) {
+      var items = p.sheets.map(function (i) {
+        var s = SHEETS[i], n = 0;
+        for (var k = 0; k < DATA.recs.length; k++) {}
+        return '<li>' + esc(s[2]) + ' <span class="n">' + countSheet(i) + '건</span></li>';
+      });
+      if (p.img) items.push('<li>' + esc(p.img.sub) + ' <span class="n">이미지 ' + p.img.files.length + '장</span></li>');
+      html += '<div class="cov"><div class="cov-h"><b>' + esc(p.name) + '</b>' +
+        '<button type="button" class="linkbtn" data-pick="' + esc(p.name) + '">이 보험사만 검색</button></div><ul>' + items.join('') + '</ul></div>';
+    });
+  });
+  openSheet('list', '📚 자료 목록', '<p class="sheet-note">보험사가 GA에 배포한 자료입니다. 보험사를 누르면 그 보험사만 골라 검색합니다.</p>' + html);
+  bindPick();
+}
+var SHEET_COUNT = null;
+function countSheet(i) {
+  if (!SHEET_COUNT) { SHEET_COUNT = {}; DATA.recs.forEach(function (r) { SHEET_COUNT[r[0]] = (SHEET_COUNT[r[0]] || 0) + 1; }); }
+  return (SHEET_COUNT[i] || 0).toLocaleString();
+}
+function bindPick() {
+  $$('[data-pick]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      state.ins = b.getAttribute('data-pick');
+      $('#ins').value = state.ins;
+      closeModal('#sheetModal');
+      setQuery(state.q, false);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  });
+}
+function openMine() {
+  var cs = liveCustom(), ms = Object.keys(MEMOS).filter(function (k) { return memoTxt(k); });
+  var html = '<div class="sheet-sec">내 자료 ' + cs.length + '건</div>';
+  if (!cs.length) html += '<p class="sheet-note">아직 추가한 자료가 없어요. 카드의 “＋ 내 자료”로 보험사 기준을 직접 더하거나 고칠 수 있습니다.</p>';
+  cs.forEach(function (c) {
+    html += '<button type="button" class="mine-row" data-mine="' + esc(c.id) + '">' +
+      '<span class="mr-t"><b>' + esc(c.ins) + '</b> ' + esc(c.name) + (c.code ? ' <i>' + esc(c.code) + '</i>' : '') + '</span>' +
+      '<span class="mr-s">' + (c.ov ? '보험사 자료 수정본' : '내가 추가한 자료') + ' · ' + (c.kv || []).length + '개 항목</span></button>';
+  });
+  html += '<div class="sheet-sec">내 메모 ' + ms.length + '건</div>';
+  if (!ms.length) html += '<p class="sheet-note">질환별 메모는 검색 결과의 “＋메모”로 남길 수 있습니다.</p>';
+  ms.forEach(function (k) {
+    var label = memoLabel(k);
+    html += '<button type="button" class="mine-row" data-memokey="' + esc(k) + '">' +
+      '<span class="mr-t">' + esc(label.t) + '</span>' +
+      '<span class="mr-s">' + esc(memoTxt(k)).slice(0, 90) + '</span></button>';
+  });
+  openSheet('mine', '📝 내 자료 · 내 메모', html);
+  $$('[data-mine]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var id = b.getAttribute('data-mine');
+      var c = CUSTOM.filter(function (x) { return x.id === id; })[0];
+      closeModal('#sheetModal');
+      if (c) openEditor({ mode: 'edit', id: c.id, ins: c.ins });
+    });
+  });
+  $$('[data-memokey]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      closeModal('#sheetModal');
+      openMemo(b.getAttribute('data-memokey'));
+    });
+  });
+}
+function memoLabel(key) {
+  if (key.charAt(0) === 'c') {
+    var c = CUSTOM.filter(function (x) { return 'c' + x.id === key; })[0];
+    return c ? { t: c.ins + ' · ' + c.name } : { t: '내 자료' };
+  }
+  var x = IDX.filter(function (e) { return e.key === key; })[0];
+  return x ? { t: x.ins + ' · ' + x.name + (x.code ? ' (' + x.code + ')' : '') } : { t: '질환' };
+}
+function openHelp() {
+  openSheet('help', 'ℹ️ 사용 안내', '' +
+    '<div class="help">' +
+    '<h4>쓰는 법</h4><ul>' +
+    '<li>위 검색창에 병명(<b>대장용종</b>)이나 질병코드(<b>D12</b>, <b>K63.5</b>)를 넣으면 보험사별 인수기준이 나옵니다.</li>' +
+    '<li>보험 구분(손해/생명)과 보험사를 골라 좁힐 수 있습니다.</li>' +
+    '<li>값 색: <span class="lg good">인수</span> <span class="lg warn">조건·부담보·서류</span> <span class="lg bad">불가·거절</span></li>' +
+    '<li>질환별로 <b>메모</b>를 남기고, <b>수정</b>을 눌러 내 기준(수정본)을 만들 수 있습니다.</li>' +
+    '<li>인쇄 미리보기로 지금 결과를 A4로 뽑을 수 있습니다.</li>' +
+    '</ul>' +
+    '<h4>자료</h4><p>' + esc(DATA.meta.label) + '를 정리한 것입니다. 자료 만든 날 ' + esc(DATA.meta.built) + ' · ' + DATA.meta.recs.toLocaleString() + '건 · 보험사 ' + DATA.meta.insurers + '곳.</p>' +
+    '<p>보험사가 GA에 배포한 예외질환·인수기준 참고 자료이며, 실시간 심사 결과가 아니므로 최종 인수 여부는 각 보험사 언더라이팅 결과를 따릅니다. 개인 참고용으로만 사용하세요.</p>' +
+    '<h4>내 자료는 어디에</h4><p>메모와 내 자료는 이 기기(브라우저 저장소)에 있고, ☁️ 구글 드라이브를 연결하면 본인 드라이브의 앱 전용 공간에만 보관되어 PC·폰이 맞춰집니다. 다른 사람에게 보내지 않습니다.</p>' +
+    '<p class="hint">버전 ' + APP_VERSION + ' · ' + esc(DiseaseDrive.label()) + '</p>' +
+    '</div>');
+}
+
+/* ── 인쇄 ─────────────────────────────────────────────── */
+function printEntries() {
+  var res = search();
+  if (!res.query) { toast('먼저 병명이나 질병코드로 검색해 주세요'); return null; }
+  return res;
+}
+function paperHTML(res) {
+  var max = PRINT.max === 'all' ? Infinity : Number(PRINT.max) || 20;
+  var filterTxt = (state.t ? (state.t === '손보' ? '손해보험' : '생명보험') : '전체') + (state.ins ? ' · ' + state.ins : '');
+  var html = '<div class="pd-head"><div class="pd-name">예외질환 검색기</div><div class="pd-date">' + todayStr() + '</div></div>' +
+    '<h3 class="pt">“' + esc(res.query) + '” 보험사별 인수기준</h3>' +
+    '<div class="pmeta">' + esc(filterTxt) + ' · ' + res.hits.length + '개 보험사 · ' + res.total.toLocaleString() + '건' +
+    (PRINT.max === 'all' ? '' : ' (보험사별 최대 ' + max + '건)') + ' · 개인 참고용</div>';
+  if (!res.hits.length) html += '<p class="pnone">검색 결과가 없습니다.</p>';
+  var groups = res.query.split(/\s+/).filter(Boolean).map(expand);
+  res.hits.forEach(function (h) {
+    var p = h.ins;
+    html += '<section class="pins"><h4>' + esc(p.name) + ' <span>' + (p.t === '손보' ? '손해보험' : '생명보험') + ' · ' + h.list.length + '건</span></h4>';
+    if (PRINT.notes && p.sheets.length) {
+      var parts = p.sheets.map(function (i) { return SHEETS[i]; }).filter(function (s) { return s[3] && s[3].length; });
+      if (parts.length) html += '<div class="pnotes">' + parts.map(function (s) {
+        return '<b>' + esc(s[2]) + '</b><ul>' + s[3].map(function (n) { return '<li>' + esc(n) + '</li>'; }).join('') + '</ul>';
+      }).join('') + '</div>';
+    }
+    h.list.slice(0, max).forEach(function (o) {
+      var x = o.x;
+      var pairs = x.kv;
+      var rows = '';
+      for (var i = 0; i < pairs.length; i += 2) {
+        rows += '<tr><th>' + esc(pairs[i][0]) + '</th><td>' + esc(pairs[i][1]) + '</td>';
+        if (pairs[i + 1]) rows += '<th>' + esc(pairs[i + 1][0]) + '</th><td>' + esc(pairs[i + 1][1]) + '</td>';
+        else rows += '<th></th><td></td>';
+        rows += '</tr>';
+      }
+      var memo = PRINT.memo ? memoTxt(x.key) : '';
+      html += '<div class="prow"><div class="pnm">' + esc(x.name || '(이름 없음)') +
+        (x.code ? ' <b>' + esc(x.code) + '</b>' : '') + (x.cat ? ' <em>' + esc(x.cat) + '</em>' : '') +
+        (x.kind === 'c' ? ' <i class="pmine">내 자료</i>' : '') + '</div>' +
+        (rows ? '<table>' + rows + '</table>' : '') +
+        (memo ? '<div class="pmemo"><b>메모</b> ' + esc(memo).replace(/\n/g, '<br>') + '</div>' : '') +
+        '</div>';
+    });
+    if (h.list.length > max) html += '<div class="pmore">… 그 밖에 ' + (h.list.length - max) + '건 더 있음</div>';
+    html += '</section>';
+  });
+  var none = res.none.filter(function (p) { return !(p.img && p.img.only); });
+  if (none.length) html += '<p class="pnone">자료에서 못 찾은 보험사: ' + esc(none.map(function (p) { return p.name; }).join(', ')) + '</p>';
+  html += '<p class="pfoot">보험사가 GA에 배포한 예외질환·인수기준 참고 자료이며, 실시간 심사 결과가 아니므로 최종 인수 여부는 각 보험사 언더라이팅 결과를 따릅니다. 개인 참고용으로만 사용하세요.</p>';
+  return html;
+}
+function openPrint() {
+  var res = printEntries();
+  if (!res) return;
+  openModal('#printModal');
+  paintPrint(res);
+}
+function paintPrint(res) {
+  var html = paperHTML(res || printEntries());
+  if (!html) return;
+  $('#printPreview').innerHTML = '<div class="paper-print" id="paperView">' + html + '</div>';
+  $('#printRoot').innerHTML = html;
+  fitPaper();
+}
+function fitPaper() {
+  var paper = $('#paperView'), wrap = $('#printPreview');
+  if (!paper) return;
+  var w = wrap.clientWidth - 24;
+  var scale = Math.min(1, w / 794);
+  paper.style.transform = 'scale(' + scale + ')';
+  paper.style.transformOrigin = 'top center';
+  wrap.style.height = (paper.offsetHeight * scale + 24) + 'px';
+}
+function doPrint() {
+  try { window.print(); } catch (e) { toast('이 브라우저에서는 인쇄 창을 열지 못했습니다'); }
+}
+
+/* ── 백업 ─────────────────────────────────────────────── */
+function downloadBlob(blob, name) {
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+}
+function exportJSON() {
+  var memos = {};
+  Object.keys(MEMOS).forEach(function (k) { if (memoTxt(k)) memos[k] = { t: MEMOS[k].t, upd: MEMOS[k].upd || 0 }; });
+  var payload = {
+    app: APP, name: APP_NAME, version: APP_VERSION,
+    exportedAt: new Date().toISOString(),
+    dataBuilt: DATA.meta.built,
+    custom: liveCustom(), memos: memos
+  };
+  downloadBlob(new Blob([JSON.stringify(payload, null, 1)], { type: 'application/json' }), '예외질환-검색기-백업-' + todayStr() + '.json');
+  toast('백업 파일을 내려받았습니다');
+}
+function restoreFile(file) {
+  var fr = new FileReader();
+  fr.onload = function () {
+    var p = null;
+    try { p = JSON.parse(String(fr.result)); } catch (e) { p = null; }
+    if (!p || p.app !== APP || !(Array.isArray(p.custom) || p.memos)) { toast('예외질환 검색기 백업 파일이 아닙니다'); return; }
+    var nC = (p.custom || []).filter(function (c) { return c && !c.deletedAt; }).length;
+    var nM = Object.keys(p.memos || {}).length;
+    askConfirm('백업으로 복원할까요?<br><span class="cf-sub">이 기기의 내 자료 ' + liveCustom().length + '건 · 메모 ' +
+      Object.keys(MEMOS).filter(function (k) { return memoTxt(k); }).length + '건이 백업 내용(' + nC + '건 · ' + nM + '건)으로 바뀝니다.</span>', '복원', false).then(function (ok) {
+      if (!ok) return;
+      var now = Date.now();
+      liveCustom().forEach(function (c) { c.deletedAt = now; c.upd = now; });
+      var keep = {};
+      (p.custom || []).forEach(function (c) {
+        if (!c || !c.id || !c.ins || !c.name) return;
+        keep[c.id] = {
+          id: String(c.id), ins: c.ins, name: c.name, code: c.code || '', cat: c.cat || '',
+          kv: Array.isArray(c.kv) ? c.kv : [], ov: c.ov || '',
+          createdAt: Number(c.createdAt) || now, upd: Number(c.upd) || now
+        };
+      });
+      var tombstones = CUSTOM.filter(function (c) { return c.deletedAt; });
+      var ids = {};
+      tombstones.forEach(function (c) { ids[c.id] = 1; });
+      CUSTOM = tombstones.concat(Object.keys(keep).filter(function (id) { return !ids[id]; }).map(function (id) { return keep[id]; }));
+      MEMOS = {};
+      Object.keys(p.memos || {}).forEach(function (k) { MEMOS[k] = { t: String(p.memos[k].t || ''), upd: Number(p.memos[k].upd) || now }; });
+      saveCustom();
+      saveMemos();
+      render();
+      toast('백업으로 복원했습니다');
+    });
+  };
+  fr.readAsText(file);
+}
+
+/* ── 확인 창 ─────────────────────────────────────────── */
+var confirmResolve = null;
+function askConfirm(html, yes, danger) {
+  $('#confirmText').innerHTML = html;
+  var y = $('#confirmYes');
+  y.textContent = yes || '확인';
+  y.className = danger ? 'danger' : '';
+  openModal('#confirmModal');
+  return new Promise(function (resolve) { confirmResolve = resolve; });
+}
+function closeConfirm(v) {
+  closeModal('#confirmModal');
+  if (confirmResolve) { confirmResolve(v); confirmResolve = null; }
+}
+
+/* ── 원본 이미지 크게 보기 ───────────────────────────── */
+function lbShow() {
+  var m = IMG[LB.ins];
+  if (!m) return;
+  $('#lbImg').src = m.files[LB.i];
+  $('#lbTitle').textContent = LB.ins + ' · ' + (LB.i + 1) + ' / ' + m.files.length;
+  openModal('#lbModal');
+}
+function lbMove(d) {
+  var m = IMG[LB.ins];
+  if (!m) return;
+  LB.i = (LB.i + d + m.files.length) % m.files.length;
+  lbShow();
+}
+
+/* ── 드라이브 UI ─────────────────────────────────────── */
+function paintDrive(text, st) {
+  var btn = $('#driveBarBtn');
+  if (!btn) return;
+  btn.className = 'drive-btn' + (st === 'on' ? ' on' : (st === 'syncing' ? ' sync' : ((st === 'auth' || st === 'error' || st === 'offline') ? ' warn' : '')));
+  $('#driveText').textContent = DiseaseDrive.isOn() ? text : '구글 드라이브 연결';
+  $('#driveHint').textContent = DiseaseDrive.isOn() ? 'PC·폰 동기화' : '내 자료·메모';
+}
+window.paintDrive = paintDrive;
+function openDrive() {
+  var on = DiseaseDrive.isOn();
+  var last = DiseaseDrive.lastSyncAt();
+  var html = '<div class="drv-state"><span>상태</span><b>' + esc(DiseaseDrive.label()) + '</b></div>' +
+    (last ? '<div class="drv-state"><span>마지막 동기화</span><b>' + esc(DiseaseDrive.ago(last)) + '</b></div>' : '') +
+    '<p class="sheet-note">내 자료와 메모를 본인 구글 드라이브의 앱 전용 공간(appDataFolder)에 <b>' + SYNC_FILE + '</b> 파일로 보관합니다. PC와 폰에서 각각 한 번 연결하면 이후 자동으로 맞춰지고, 다른 사람은 볼 수 없습니다.</p>' +
+    (on ? '<button type="button" class="btn primary" id="drvSync">지금 동기화</button>' +
+          '<button type="button" class="btn danger-line" id="drvOff">연결 해제</button>'
+        : '<button type="button" class="btn primary" id="drvOn">☁️ 구글 드라이브 연결</button>') +
+    '<details class="drv-more"><summary>고급 설정 (OAuth 클라이언트 ID)</summary>' +
+    '<input id="drvClient" type="text" class="inp" autocapitalize="off" autocorrect="off" spellcheck="false" value="' + esc(DiseaseDrive.clientId()) + '">' +
+    '<button type="button" class="btn" id="drvSave">저장</button></details>';
+  openSheet('drive', '☁️ 구글 드라이브', html);
+  var onBtn = $('#drvOn');
+  if (onBtn) onBtn.addEventListener('click', function () {
+    onBtn.disabled = true;
+    onBtn.textContent = '연결하는 중…';
+    DiseaseDrive.connect().then(function () {
+      paintDrive(DiseaseDrive.label(), 'on');
+      openDrive();
+      toast('구글 드라이브에 연결했습니다');
+    }).catch(function () {
+      paintDrive(DiseaseDrive.label(), DiseaseDrive.status());
+      openDrive();
+      toast('연결하지 못했습니다 — 팝업 차단을 풀고 다시 시도해 주세요');
+    });
+  });
+  var syncBtn = $('#drvSync');
+  if (syncBtn) syncBtn.addEventListener('click', function () {
+    syncBtn.disabled = true;
+    DiseaseDrive.sync(true).then(function (ok) {
+      paintDrive(DiseaseDrive.label(), 'on');
+      openDrive();
+      toast(ok ? '동기화했습니다' : '동기화하지 못했습니다');
+    });
+  });
+  var offBtn = $('#drvOff');
+  if (offBtn) offBtn.addEventListener('click', function () {
+    DiseaseDrive.disconnect().then(function () { paintDrive(DiseaseDrive.label(), 'off'); openDrive(); toast('연결을 해제했습니다'); });
+  });
+  var saveBtn = $('#drvSave');
+  if (saveBtn) saveBtn.addEventListener('click', function () {
+    DiseaseDrive.setClientId($('#drvClient').value);
+    toast('저장했습니다');
+    openDrive();
+  });
+}
+
+/* ── 이벤트 ───────────────────────────────────────────── */
+function bindEvents() {
+  var timer = null;
+  $('#q').addEventListener('input', function (e) {
+    var v = e.target.value;
+    $('#clear').hidden = !v;
+    clearTimeout(timer);
+    timer = setTimeout(function () { state.q = v; state.open = {}; render(); }, 170);
+  });
+  $('#searchForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    state.q = $('#q').value;
+    state.open = {};
+    addRecent(state.q);
+    refreshChips();
+    render();
+    $('#q').blur();
+  });
+  $('#clear').addEventListener('click', function () { setQuery('', true); $('#q').focus(); });
+  $('#btnFind').addEventListener('click', function () {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setTimeout(function () { $('#q').focus(); $('#q').select(); }, 220);
+  });
+  $('#btnMenu').addEventListener('click', openMenu);
+  $('#driveBarBtn').addEventListener('click', openDrive);
+  $('#reset').addEventListener('click', function () {
+    state.t = ''; state.ins = ''; $('#ins').value = '';
+    syncSeg(); render();
+  });
+  $('#ins').addEventListener('change', function (e) {
+    state.ins = e.target.value;
+    if (state.ins && state.t && insType(state.ins) !== state.t) { state.t = ''; syncSeg(); }
+    render();
+  });
+  $$('.seg button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      state.t = b.getAttribute('data-t') || '';
+      if (state.ins && insType(state.ins) !== state.t && state.t) { state.ins = ''; $('#ins').value = ''; }
+      syncSeg(); render();
+    });
+  });
+  $('#fab').addEventListener('click', function () {
+    openEditor({ mode: 'new', ins: state.ins || INS[0].name });
+  });
+  $('#edCancel').addEventListener('click', closeEditor);
+}
+function bindDelegates() {
+  document.addEventListener('click', function (e) {
+    var t = e.target;
+    var b = t.closest('[data-go],[data-q],[data-more],[data-notes],[data-img],[data-add],[data-memo],[data-edit],[data-lb],[data-sheet]');
+    if (!b) return;
+    if (b.hasAttribute('data-go')) {
+      var el = document.getElementById('c-' + b.getAttribute('data-go'));
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
+    if (b.hasAttribute('data-q')) {
+      setQuery(b.getAttribute('data-q'), false);
+      addRecent(state.q);
+      refreshChips();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+    if (b.hasAttribute('data-more')) { toggle(b.getAttribute('data-more'), '|more'); return; }
+    if (b.hasAttribute('data-notes')) { toggle(b.getAttribute('data-notes'), '|n'); return; }
+    if (b.hasAttribute('data-img')) { toggle(b.getAttribute('data-img'), '|i'); return; }
+    if (b.hasAttribute('data-add')) { openEditor({ mode: 'new', ins: b.getAttribute('data-add') }); return; }
+    if (b.hasAttribute('data-memo')) { openMemo(b.getAttribute('data-memo')); return; }
+    if (b.hasAttribute('data-edit')) {
+      var key = b.getAttribute('data-edit');
+      if (key.charAt(0) === 'c') openEditor({ mode: 'edit', id: key.slice(1) });
+      else openEditor({ mode: 'override', baseKey: key });
+      return;
+    }
+    if (b.hasAttribute('data-lb')) {
+      LB.ins = b.getAttribute('data-lb');
+      LB.i = Number(b.getAttribute('data-i')) || 0;
+      lbShow();
+      return;
+    }
+    if (b.hasAttribute('data-sheet')) {
+      var act = b.getAttribute('data-sheet');
+      closeModal('#sheetModal');
+      if (act === 'mList') openList();
+      else if (act === 'mMine') openMine();
+      else if (act === 'mPrint') openPrint();
+      else if (act === 'mExport') exportJSON();
+      else if (act === 'mImport') $('#restorePick').click();
+      else if (act === 'mDrive') openDrive();
+      else if (act === 'mHelp') openHelp();
+    }
+  });
+}
+function bindEditor() {
+  $('#edAddKv').addEventListener('click', function () {
+    $('#edKv').insertAdjacentHTML('beforeend', kvRowHTML('', ''));
+    var rows = $$('#edKv .kvrow');
+    $('.k', rows[rows.length - 1]).focus();
+  });
+  $('#edKv').addEventListener('click', function (e) {
+    if (e.target.classList.contains('kvdel')) {
+      var rows = $$('#edKv .kvrow');
+      if (rows.length <= 1) { e.target.closest('.kvrow').querySelectorAll('input').forEach(function (i) { i.value = ''; }); return; }
+      e.target.closest('.kvrow').remove();
+    }
+  });
+  $('#edSave').addEventListener('click', saveEditor);
+  $('#edDelete').addEventListener('click', deleteEditorEntry);
+  $('#edRevert').addEventListener('click', revertOverride);
+}
+function bindModals() {
+  $$('.modal').forEach(function (m) {
+    m.addEventListener('click', function (e) { if (e.target === m) closeModal('#' + m.id); });
+  });
+  $('#confirmNo').addEventListener('click', function () { closeConfirm(false); });
+  $('#confirmYes').addEventListener('click', function () { closeConfirm(true); });
+  $('#printClose').addEventListener('click', function () { closeModal('#printModal'); });
+  $('#printCancel').addEventListener('click', function () { closeModal('#printModal'); });
+  $('#printGo').addEventListener('click', doPrint);
+  $$('#printModal [data-popt]').forEach(function (el) {
+    el.addEventListener('change', function () {
+      var k = el.getAttribute('data-popt');
+      if (k === 'max') PRINT.max = el.value;
+      else PRINT[k] = el.checked;
+      paintPrint();
+    });
+  });
+  $('#lbClose').addEventListener('click', function () { closeModal('#lbModal'); });
+  $('#lbPrev').addEventListener('click', function () { lbMove(-1); });
+  $('#lbNext').addEventListener('click', function () { lbMove(1); });
+  document.addEventListener('keydown', function (e) {
+    if ($('#lbModal').hidden) {
+      if (e.key === 'Escape') {
+        if (!$('#confirmModal').hidden) closeConfirm(false);
+        else if (!$('#printModal').hidden) closeModal('#printModal');
+        else if (!$('#sheetModal').hidden) closeModal('#sheetModal');
+        else if (!$('#editor').hidden) closeEditor();
+      }
+      return;
+    }
+    if (e.key === 'Escape') closeModal('#lbModal');
+    if (e.key === 'ArrowRight') lbMove(1);
+    if (e.key === 'ArrowLeft') lbMove(-1);
+  });
+  $('#restorePick').addEventListener('change', function (e) {
+    var f = e.target.files && e.target.files[0];
+    if (f) restoreFile(f);
+    e.target.value = '';
+  });
+  window.addEventListener('resize', function () { if (!$('#printModal').hidden) fitPaper(); });
+}
+function registerSW() {
+  if (!('serviceWorker' in navigator)) return;
+  if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') return;
+  navigator.serviceWorker.register('./sw.js').catch(function (e) { console.warn('서비스 워커 등록 실패', e); });
+}
+
+function init() {
+  buildAll();
+  loadLocal();
+  fillInsSelect();
+  refreshChips();
+  syncSeg();
+  bindEvents();
+  bindDelegates();
+  bindEditor();
+  bindModals();
+  render();
+  paintDrive(DiseaseDrive.label(), DiseaseDrive.status());
+  DiseaseDrive.init();
+  registerSW();
+}
+init();
+
+</script>
+</body>
+</html>
