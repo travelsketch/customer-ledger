@@ -2767,17 +2767,17 @@ function openAbout() {
 /* ══════════════ 구글 연동 (드라이브 + 캘린더) ══════════════ */
 function gState() {
   if (!ScheduleDrive.isOn()) return 'off';
-  if (ScheduleCal.perm()) return 'auth';
   var d = ScheduleDrive.status(), c = ScheduleCal.status();
   if (d === 'syncing' || c === 'syncing') return 'syncing';
-  if (d === 'auth' || c === 'auth') return 'auth';
-  if (d === 'error' || c === 'error') return 'error';
+  if (d === 'auth') return 'auth';
+  if (d === 'error') return 'error';
   if (d === 'offline' || c === 'offline') return 'offline';
   return 'on';
 }
 function googleLabel() {
   var st = gState();
   if (st === 'off') return '미연결';
+  if (ScheduleCal.perm()) return '캘린더 권한 필요';
   if (st === 'syncing') return '동기화 중…';
   if (st === 'auth') return '연결 확인 필요';
   if (st === 'error') return '동기화 오류';
@@ -2921,6 +2921,7 @@ function paintDrive() {
   if (btn) btn.className = 'drive-btn' + (st === 'on' ? ' on' : (st === 'syncing' ? ' sync' : ((st === 'auth' || st === 'error' || st === 'offline') ? ' warn' : '')));
   var TEXT = { off: '구글 연동', syncing: '동기화 중…', on: '구글 연동됨', auth: '연결 확인 필요', error: '동기화 오류', offline: '오프라인' };
   var HINT = { off: '드라이브·캘린더', syncing: '드라이브·캘린더', on: googleAgo(), auth: '눌러서 다시 연결', error: '눌러서 확인', offline: '인터넷 연결 확인' };
+  if (ScheduleCal.perm() && st !== 'off') HINT.on = '캘린더 권한 필요';
   var t = $('#driveText'), h = $('#driveHint');
   if (t) t.textContent = TEXT[st] || TEXT.off;
   if (h) h.textContent = HINT[st] || HINT.off;
