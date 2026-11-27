@@ -1,5 +1,5 @@
 /* 용우일정표 서비스 워커 — 인터넷이 없어도 앱이 열리도록 파일을 기기에 보관합니다. */
-var CACHE = 'yongwoo-schedule-v1.0.0-r1';
+var CACHE = 'yongwoo-schedule-v1.1.0-r1';
 var ASSETS = [
   './',
   './index.html',

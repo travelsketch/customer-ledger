@@ -2,7 +2,7 @@
 
 일간·주간·월간·연간이 한 번에 연동되는 연간일정표 웹앱(PWA)입니다.
 음력과 한국 공휴일을 표시하고, 메모·사진·파일을 붙여 두고, A4로 인쇄하고,
-구글 드라이브로 PC와 안드로이드폰의 일정을 자동으로 맞출 수 있습니다.
+구글 드라이브로 PC와 안드로이드폰의 일정을 맞추고, **구글 캘린더와 양방향으로 동기화**합니다.
 
 - 주소: <https://travelsketch.github.io/customer-ledger/yongwoo-schedule/>
 - 같은 저장소의 다른 앱: 루트(용우고객관리대장) · `yongwoo-cashbook/` · `yongwoo-note/`
@@ -21,7 +21,28 @@
 | 인쇄 | 지금 보는 뷰 그대로 A4 인쇄 미리보기(사진·메모 포함 여부 선택). |
 | 백업 | 일정·사진·파일 전체를 JSON 파일 하나로 내려받고 복원합니다. |
 | 검색 | 제목·메모·날짜·음력·공휴일·첨부 파일명으로 찾습니다. |
-| PC·폰 동기화 | `☁️ 구글 드라이브 연결`을 기기마다 한 번 누르면 이후 저장·수정·삭제가 자동으로 오갑니다(앱 전용 공간, 내 드라이브 목록에는 보이지 않음). |
+| PC·폰 동기화 | `☁️ 구글 연동`을 기기마다 한 번 누르면 이후 저장·수정·삭제가 자동으로 오갑니다(앱 전용 공간, 내 드라이브 목록에는 보이지 않음). |
+| 구글 캘린더 | 같은 연결로 **내 캘린더(primary)와 양방향 동기화**. 구글에서 만든 일정을 받아 오고, 이 앱에서 추가·수정·삭제한 일정을 구글 캘린더에도 그대로 반영합니다. `⋮ → 🔄 지금 동기화`로 언제든 바로 맞출 수 있습니다. |
+
+## 구글 캘린더 연동
+
+- 연결: 상단 `☁️ 구글 연동` → `☁️ 구글 연결 (드라이브 · 캘린더)` 한 번으로
+  `drive.appdata`와 `calendar.events` 두 권한을 함께 승인합니다(창은 한 번만 뜹니다).
+- **가져오기**: 2025-01-01 ~ 2028-12-31의 `primary` 캘린더 일정을 받아 옵니다.
+  - 종일 일정은 구글의 `end.date`(다음 날, exclusive)를 하루 빼서 여러 날 일정으로 옮기고,
+    시간 일정은 **한국 시각(Asia/Seoul)의 날짜·HH:MM**으로 바꿉니다(자정에 끝나는 일정은 23:59).
+  - 제목은 그대로, 장소는 메모 첫 줄 `📍 장소`, 설명은 그 아래에 넣습니다.
+  - 이미 이 앱에 **같은 날짜 + 같은 제목**의 일정이 있으면 새로 만들지 않고 `gcalId`로 이어 붙입니다
+    (이미 적어 둔 메모는 지우지 않고 구글 설명을 뒤에 덧붙입니다).
+- **보내기**: 이 앱에서 추가·수정·삭제하면 곧바로 구글 캘린더에도 반영합니다(POST/PATCH/DELETE).
+  오프라인·미연결 상태에서 고친 일정은 `gcalDirty` 표시로 남겨 두었다가 다음 동기화 때 올립니다.
+  보낼 때는 `sendUpdates=none`으로 보내 참석자에게 메일이 가지 않습니다.
+- **구글 쪽 변경**: 구글 캘린더에서 고치거나 지운 일정도 다음 동기화 때 이 앱에 반영합니다.
+  목록을 끝까지 받아오지 못했거나 한 번에 너무 많은 일정이 사라진 경우에는 지우지 않고 넘어갑니다.
+- **캘린더 권한이 모자랄 때**(예전에 드라이브만 허용한 기록이 남아 `403 insufficientPermissions`):
+  상단이 `연결 확인 필요`로 바뀌고, `☁️ 구글 연동` 시트에 `📅 캘린더 권한 다시 허용` 버튼이 나옵니다.
+- **기존 일정 올리기**: 업그레이드 전에 이 앱에만 있던 일정은 저절로 올리지 않습니다.
+  시트의 `⬆️ 이 기기에만 있는 일정 N개 캘린더에 올리기`를 눌러 확인했을 때만 한 번에 올립니다(중복 방지).
 
 ## 음력·공휴일
 
@@ -39,8 +60,11 @@
 - 사진·파일: `IndexedDB` (`yongwoo-schedule` 의 `attachments`)
 - 드라이브를 연결하면: 내 구글 드라이브의 **앱 전용 공간(appDataFolder)** 에 `yongwoo-schedule-sync.json`
   한 파일로 저장(한 개 8MB·합계 30MB까지). 기기별로 한 번 승인하면 됩니다.
+- 구글 캘린더를 연결하면: 내 캘린더(primary)의 일정과 양방향으로 맞춥니다.
 - 병합 기준: 일정은 `updatedAt`, 삭제는 `deletedAt`(tombstone) — 양쪽에서 고친 내용이 섞여도
   최신 것으로 맞춰집니다.
+- 구글 캘린더와 이어진 일정에는 `gcalId`·`gcalUpdated`·`gcalDirty`가 함께 저장되어 드라이브 동기화로
+  PC·폰에 그대로 옮겨집니다. 그래서 기기가 달라도 같은 일정을 두 번 만들지 않습니다.
 
 ## 파일
 
@@ -51,7 +75,7 @@ sw.js                   서비스 워커(오프라인 열기)
 icon.svg / icon-192.png / icon-512.png / icon-512-maskable.png
 build.py                index.html 조립 스크립트
 lunar-table.txt         음력 표(KASI, 1900~2050)
-src/                    화면·코드 원본(app.css, app.html, core/store/render/editor/ui.js)
+src/                    화면·코드 원본(app.css, app.html, core/google/store/gcal/render/editor/ui.js)
 test/                   검증 스크립트와 음력 정답 자료
 preview-mobile.png      휴대폰(412x915) 월간 화면
 preview-yearly.png      PC(1280) 연간 화면 — 12개월 한눈에
@@ -66,6 +90,8 @@ preview-day.png / preview-week.png / preview-pc.png / preview-print.png
 python3 apps/yongwoo-schedule/build.py            # src → index.html
 LD_LIBRARY_PATH=/workspace/scratch/chromedeps/root/usr/lib/x86_64-linux-gnu \
   python3 apps/yongwoo-schedule/test/ui-test.py   # 화면·동작 자동 검증
+LD_LIBRARY_PATH=/workspace/scratch/chromedeps/root/usr/lib/x86_64-linux-gnu \
+  python3 apps/yongwoo-schedule/test/calendar-test.py  # 구글 캘린더 양방향(모의 서버)
 python3 apps/yongwoo-schedule/test/check-lunar.py # 음력·공휴일 대조
 bash deploy/yongwoo-schedule-deploy.sh            # main·gh-pages 두 브랜치에 배포
 ```
@@ -73,3 +99,7 @@ bash deploy/yongwoo-schedule-deploy.sh            # main·gh-pages 두 브랜치
 `test/ui-test.py` 는 412×915(안드로이드폰)과 1280×800(PC)에서 네 뷰 전환·연동, 음력 정확성,
 메모 입력·수정·삭제, 사진 자동 압축, PDF 첨부, 인쇄, 백업·복원, 드라이브 동기화(모의 서버),
 서비스 워커, 콘솔 오류 0건을 확인합니다.
+
+`test/calendar-test.py` 는 모의 구글 API로 두 권한 동시 승인, 종일·시간 일정 가져오기(한국 시각 변환),
+같은 날짜·제목 병합, 추가(POST)·수정(PATCH)·삭제(DELETE), 오프라인 변경 반영, 구글 쪽 수정·삭제 반영,
+권한 부족(403) 재동의, 기존 일정 올리기, 드라이브 동기화와의 호환을 확인합니다.

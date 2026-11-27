@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>용우일정표</title>
-<meta name="description" content="일간·주간·월간·연간이 한 번에 연동되는 연간일정표 — 음력과 공휴일 표시, 메모·사진·파일 첨부, A4 인쇄, PC·폰 구글 드라이브 동기화.">
+<meta name="description" content="일간·주간·월간·연간이 한 번에 연동되는 연간일정표 — 음력과 공휴일 표시, 메모·사진·파일 첨부, A4 인쇄, 구글 캘린더 양방향·드라이브 동기화.">
 <meta name="theme-color" content="#0f766e">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -394,8 +394,8 @@ input[type=date],input[type=time]{color-scheme:light}
   <div class="drive-wrap" id="driveWrap">
     <button id="driveBarBtn" class="drive-btn" type="button">
       <span class="drive-ico">☁️</span>
-      <span class="drive-txt" id="driveText">구글 드라이브 연결</span>
-      <span class="drive-hint" id="driveHint">PC·폰 동기화</span>
+      <span class="drive-txt" id="driveText">구글 연동</span>
+      <span class="drive-hint" id="driveHint">드라이브·캘린더</span>
     </button>
   </div>
 
@@ -542,7 +542,7 @@ input[type=date],input[type=time]{color-scheme:light}
    ═══════════════════════════════════════════════════════════════ */
 
 var APP_NAME = '용우일정표';
-var APP_VERSION = '1.0.0';
+var APP_VERSION = '1.1.0';
 var DB_NAME = 'yongwoo-schedule';
 var DB_VER = 1;
 var KEY_EV = 'yongwooSchedule.events.v1';
@@ -792,6 +792,107 @@ function holidayOf(dateStr) {
   return holidaysOf(y)[dateStr] || '';
 }
 
+/* ==== google.js ==== */
+/* ══════════════ 구글 로그인 (드라이브·캘린더 공통) ══════════════
+   한 번 승인하면 구글 드라이브(앱 전용 공간)와 구글 캘린더를 함께 씁니다.
+   승인 창은 두 기능이 따로 띄우지 않고 이 한 곳에서만 엽니다. */
+var GOOGLE_SCOPE_DRIVE = 'https://www.googleapis.com/auth/drive.appdata';
+var GOOGLE_SCOPE_CALENDAR = 'https://www.googleapis.com/auth/calendar.events';
+var GOOGLE_SCOPES = GOOGLE_SCOPE_DRIVE + ' ' + GOOGLE_SCOPE_CALENDAR;
+var KEY_GOOGLE = 'yongwooSchedule.google.v1';
+
+var GoogleAuth = (function () {
+  var token = '';
+  var tokenExp = 0;
+  var scope = readScope();
+  var gsiPromise = null;
+  var inflight = null;
+  var clientIdFn = null;
+
+  function readScope() {
+    try { return String((JSON.parse(localStorage.getItem(KEY_GOOGLE)) || {}).scope || ''); } catch (e) { return ''; }
+  }
+  function writeScope(s) {
+    scope = String(s || '');
+    try {
+      localStorage.setItem(KEY_GOOGLE, JSON.stringify({ scope: scope, at: Date.now() }));
+    } catch (e) {}
+  }
+  function clientId() {
+    var v = '';
+    try { v = clientIdFn ? String(clientIdFn() || '') : ''; } catch (e) { v = ''; }
+    return v.trim() || DRIVE_DEFAULT_CLIENT_ID;
+  }
+  function loadGis() {
+    if (window.google && window.google.accounts && window.google.accounts.oauth2) return Promise.resolve();
+    if (gsiPromise) return gsiPromise;
+    gsiPromise = new Promise(function (resolve, reject) {
+      if (!navigator.onLine) { reject(new Error('offline')); return; }
+      var s = document.createElement('script');
+      s.src = 'https://accounts.google.com/gsi/client';
+      s.async = true; s.defer = true;
+      s.onload = function () {
+        if (window.google && window.google.accounts && window.google.accounts.oauth2) resolve();
+        else { gsiPromise = null; reject(new Error('gsi-unavailable')); }
+      };
+      s.onerror = function () { gsiPromise = null; reject(new Error('gsi-failed')); };
+      document.head.appendChild(s);
+    });
+    return gsiPromise;
+  }
+  /* interactive=false 이면 조용히(팝업 없이) 토큰을 받아 봅니다.
+     forceConsent=true 이면 캘린더 권한까지 다시 물어보는 동의 창을 엽니다. */
+  function request(interactive, forceConsent) {
+    if (inflight) return inflight;
+    var p = loadGis().then(function () {
+      return new Promise(function (resolve, reject) {
+        var done = false;
+        function finish(err, tk) {
+          if (done) return;
+          done = true;
+          if (tk) resolve(tk); else reject(err || new Error('no-token'));
+        }
+        try {
+          var client = window.google.accounts.oauth2.initTokenClient({
+            client_id: clientId(),
+            scope: GOOGLE_SCOPES,
+            callback: function (resp) {
+              if (resp && resp.access_token) {
+                token = resp.access_token;
+                tokenExp = Date.now() + (Number(resp.expires_in) || 3600) * 1000 - 90000;
+                if (resp.scope) writeScope(resp.scope);
+                finish(null, token);
+              } else {
+                finish(new Error(resp && resp.error ? resp.error : 'no-token'));
+              }
+            },
+            error_callback: function (err) { finish(new Error(err && err.type ? err.type : 'popup')); }
+          });
+          client.requestAccessToken({ prompt: (forceConsent || interactive) ? 'consent' : '' });
+        } catch (e) { finish(e); }
+      });
+    });
+    inflight = p.then(function (tk) { inflight = null; return tk; }, function (e) { inflight = null; throw e; });
+    return inflight;
+  }
+  function ensure(interactive) {
+    if (token && Date.now() < tokenExp) return Promise.resolve(token);
+    return request(!!interactive, false);
+  }
+  return {
+    setClientIdSource: function (fn) { clientIdFn = fn; },
+    clientId: clientId,
+    ensure: ensure,
+    consent: function () { return request(true, true); },
+    invalidate: function () { token = ''; tokenExp = 0; },
+    scope: function () { return scope; },
+    /* 승인 기록이 없으면 아직 모르는 상태(권한 부족은 API 응답 403으로 판별) */
+    calendarGranted: function () { return !scope || scope.indexOf('calendar') >= 0; },
+    driveGranted: function () { return !scope || scope.indexOf('drive') >= 0; }
+  };
+})();
+GoogleAuth.setClientIdSource(function () { return ScheduleDrive.clientId(); });
+
 /* ==== store.js ==== */
 /* ── 상태 ─────────────────────────────────────────────── */
 var S = {
@@ -840,7 +941,12 @@ function normEvent(e) {
     color: (COLORS.some(function (c) { return c.id === e.color; }) ? e.color : 'blue'),
     createdAt: Number(e.createdAt) || Date.now(),
     updatedAt: Number(e.updatedAt) || Number(e.createdAt) || Date.now(),
-    deletedAt: Number(e.deletedAt) || 0
+    deletedAt: Number(e.deletedAt) || 0,
+    /* 구글 캘린더와 이어진 일정 표시 */
+    gcalId: String(e.gcalId || ''),
+    gcalKey: String(e.gcalKey || ''),
+    gcalUpdated: String(e.gcalUpdated || ''),
+    gcalDirty: Number(e.gcalDirty) || 0
   };
 }
 function loadEvents() {
@@ -1015,15 +1121,11 @@ function bumpRev() {
 
 /* ══════════════ 구글 드라이브 동기화 엔진 ══════════════ */
 function createDriveSync(opt) {
-  var SCOPE = 'https://www.googleapis.com/auth/drive.appdata';
   var KEY = opt.settingsKey;
   var FILE = opt.fileName;
   var MAX_ONE_ = opt.maxFileBytes || (8 * 1024 * 1024);
   var MAX_ALL_ = opt.maxTotalBytes || (30 * 1024 * 1024);
 
-  var token = '';
-  var tokenExp = 0;
-  var gsiPromise = null;
   var running = null;
   var timer = null;
   var status = 'off';       // off | syncing | on | offline | auth | error
@@ -1062,57 +1164,6 @@ function createDriveSync(opt) {
   }
   function setStatus(s, msg) { status = s; if (msg !== undefined) note = msg; paint(); }
 
-  function loadGis() {
-    if (window.google && window.google.accounts && window.google.accounts.oauth2) return Promise.resolve();
-    if (gsiPromise) return gsiPromise;
-    gsiPromise = new Promise(function (resolve, reject) {
-      if (!navigator.onLine) { reject(new Error('offline')); return; }
-      var s = document.createElement('script');
-      s.src = 'https://accounts.google.com/gsi/client';
-      s.async = true; s.defer = true;
-      s.onload = function () {
-        if (window.google && window.google.accounts && window.google.accounts.oauth2) resolve();
-        else { gsiPromise = null; reject(new Error('gsi-unavailable')); }
-      };
-      s.onerror = function () { gsiPromise = null; reject(new Error('gsi-failed')); };
-      document.head.appendChild(s);
-    });
-    return gsiPromise;
-  }
-
-  function askToken(interactive) {
-    return loadGis().then(function () {
-      return new Promise(function (resolve, reject) {
-        var done = false;
-        function finish(err, tk) {
-          if (done) return;
-          done = true;
-          if (tk) resolve(tk); else reject(err || new Error('no-token'));
-        }
-        try {
-          var client = window.google.accounts.oauth2.initTokenClient({
-            client_id: clientId(),
-            scope: SCOPE,
-            callback: function (resp) {
-              if (resp && resp.access_token) {
-                token = resp.access_token;
-                tokenExp = Date.now() + (Number(resp.expires_in) || 3600) * 1000 - 90000;
-                finish(null, token);
-              } else {
-                finish(new Error(resp && resp.error ? resp.error : 'no-token'));
-              }
-            },
-            error_callback: function (err) { finish(new Error(err && err.type ? err.type : 'popup')); }
-          });
-          client.requestAccessToken({ prompt: interactive ? 'consent' : '' });
-        } catch (e) { finish(e); }
-      });
-    });
-  }
-  function ensureToken(interactive) {
-    if (token && Date.now() < tokenExp) return Promise.resolve(token);
-    return askToken(interactive);
-  }
   function timeoutFetch(url, o) {
     o = o || {};
     if (window.AbortController) {
@@ -1126,17 +1177,17 @@ function createDriveSync(opt) {
   function api(url, o) {
     o = o || {};
     o.headers = o.headers || {};
-    return ensureToken(false).then(function (tk) {
-      o.headers.Authorization = 'Bearer ' + tk;
-      return timeoutFetch(url, o);
-    }).then(function (res) {
-      if (res.status !== 401) return res;
-      token = '';
-      return ensureToken(false).then(function (tk) {
+    function call(retried) {
+      return GoogleAuth.ensure(false).then(function (tk) {
         o.headers.Authorization = 'Bearer ' + tk;
         return timeoutFetch(url, o);
+      }).then(function (res) {
+        if (res.status !== 401 || retried) return res;
+        GoogleAuth.invalidate();
+        return call(true);
       });
-    });
+    }
+    return call(false);
   }
   function needOk(res) {
     if (!res.ok) throw new Error('http-' + res.status);
@@ -1294,7 +1345,7 @@ function createDriveSync(opt) {
   function connect() {
     if (!navigator.onLine) { setStatus('offline'); return Promise.reject(new Error('offline')); }
     setStatus('syncing');
-    return loadGis().then(function () { return askToken(true); }).then(function () {
+    return GoogleAuth.consent().then(function () {
       setConf({ on: true, lastSyncRev: 0 });
       return sync(true);
     }).catch(function (err) {
@@ -1308,7 +1359,7 @@ function createDriveSync(opt) {
   }
   function disconnect() {
     setConf({ on: false, lastSyncRev: 0 });
-    token = ''; tokenExp = 0;
+    GoogleAuth.invalidate();
     if (timer) { clearTimeout(timer); timer = null; }
     setStatus('off');
     return Promise.resolve(true);
@@ -1369,6 +1420,7 @@ function sBuild() {
       kind: 'event', id: e.id, date: e.date, endDate: e.endDate, allDay: !!e.allDay,
       start: e.start, end: e.end, title: e.title, memo: e.memo, color: e.color,
       createdAt: e.createdAt, updatedAt: e.updatedAt, deletedAt: e.deletedAt,
+      gcalId: e.gcalId || '', gcalKey: e.gcalKey || '', gcalUpdated: e.gcalUpdated || '', gcalDirty: Number(e.gcalDirty) || 0,
       upd: Math.max(Number(e.updatedAt) || 0, Number(e.deletedAt) || 0)
     });
   });
@@ -1441,6 +1493,8 @@ function sApply(p) {
       if (live && !live.deletedAt) S.ed = live;
     }
     renderAll();
+    /* 다른 기기에서 바뀐 일정은 구글 캘린더에도 이어서 반영합니다 */
+    if (window.ScheduleCal && ScheduleCal.isOn()) ScheduleCal.markChange();
     return true;
   }).catch(function (err) {
     console.warn('드라이브 자료를 반영하지 못했습니다.', err);
@@ -1457,7 +1511,582 @@ var ScheduleDrive = createDriveSync({
   rev: function () { return Number(syncState().rev) || 0; },
   build: sBuild,
   apply: sApply,
-  onStatus: function (text, st) { paintDrive(text, st); }
+  onStatus: function (text, st) { paintDrive(); }
+});
+
+/* ==== gcal.js ==== */
+/* ══════════════ 구글 캘린더 양방향 동기화 ══════════════
+   primary 캘린더와 용우일정표를 양쪽에서 맞춥니다.
+   - 받아오기: 구글 캘린더의 일정을 날짜·시각·제목·장소·설명 그대로 가져오고,
+     이미 이 앱에 같은 날짜·제목으로 있는 일정은 새로 만들지 않고 잇습니다(gcalId).
+   - 보내기: 앱에서 추가·수정·삭제한 일정은 구글 캘린더에도 그대로 반영합니다.
+   - 구글 쪽에서 고치거나 지운 일정도 다음 동기화 때 앱에 반영합니다.
+   일정 본문에는 gcalId·gcalKey·gcalUpdated·gcalDirty 를 함께 적어 두어
+   기기(드라이브 동기화)와 구글 캘린더 사이에서 같은 일정을 두 번 만들지 않습니다. */
+var CAL_API = 'https://www.googleapis.com/calendar/v3/calendars/primary/events';
+var CAL_TZ = 'Asia/Seoul';
+var CAL_FROM = '2025-01-01T00:00:00Z';
+var CAL_TO = '2028-12-31T23:59:59Z';
+var CAL_FROM_DATE = '2025-01-01';
+var CAL_TO_DATE = '2028-12-31';
+var KEY_CAL = 'yongwooSchedule.cal.v1';
+
+function calConf() {
+  try { return JSON.parse(localStorage.getItem(KEY_CAL)) || {}; } catch (e) { return {}; }
+}
+function setCalConf(p) {
+  var c = calConf();
+  for (var k in p) if (Object.prototype.hasOwnProperty.call(p, k)) c[k] = p[k];
+  try { localStorage.setItem(KEY_CAL, JSON.stringify(c)); } catch (e) {}
+}
+function hmMinutes(t) {
+  var m = /^(\d{1,2}):(\d{2})$/.exec(String(t || ''));
+  return m ? Number(m[1]) * 60 + Number(m[2]) : -1;
+}
+function minutesHM(n) {
+  n = ((Math.round(n) % 1440) + 1440) % 1440;
+  return pad2(Math.floor(n / 60)) + ':' + pad2(n % 60);
+}
+/* RFC3339 시각 → 한국 시각의 날짜·HH:MM */
+function kstParts(iso) {
+  var d = new Date(String(iso || ''));
+  if (isNaN(d.getTime())) return null;
+  var k = new Date(d.getTime() + 9 * 3600 * 1000);
+  return {
+    date: k.getUTCFullYear() + '-' + pad2(k.getUTCMonth() + 1) + '-' + pad2(k.getUTCDate()),
+    hm: pad2(k.getUTCHours()) + ':' + pad2(k.getUTCMinutes())
+  };
+}
+function calNormTitle(s) { return String(s || '').replace(/\s+/g, ' ').trim().toLowerCase(); }
+function calMemoOf(it) {
+  var parts = [];
+  if (it && it.location) parts.push('📍 ' + String(it.location).trim());
+  if (it && it.description) parts.push(String(it.description).replace(/\r\n/g, '\n').trim());
+  return parts.filter(function (s) { return !!s; }).join('\n\n');
+}
+/* 앱 메모 → 구글 장소·설명 ('📍 장소' 첫 줄은 장소로 되돌립니다) */
+function calSplitMemo(memo) {
+  var text = String(memo || '').replace(/\r\n/g, '\n');
+  var out = { location: '', description: text.trim() };
+  var m = /^📍[ \t]*(.+?)(\n|$)/.exec(text);
+  if (m) {
+    out.location = m[1].trim();
+    out.description = text.slice(m[0].length).replace(/^\n+/, '').trim();
+  }
+  return out;
+}
+/* 구글 일정 → 앱 일정 모양 */
+function calToLocal(it) {
+  if (!it || !it.id) return null;
+  var s = it.start || {}, e = it.end || {};
+  var out = {
+    title: String(it.summary || '').slice(0, 200),
+    memo: calMemoOf(it),
+    gcalId: String(it.id),
+    gcalKey: it.recurringEventId ? (String(it.recurringEventId) + ':' + String((it.originalStartTime && (it.originalStartTime.date || it.originalStartTime.dateTime)) || '')) : '',
+    gcalUpdated: String(it.updated || '')
+  };
+  if (s.date) {
+    out.allDay = true;
+    out.date = String(s.date);
+    out.start = ''; out.end = '';
+    var lastDay = e.date ? addDays(String(e.date), -1) : '';
+    out.endDate = (lastDay && lastDay > out.date) ? lastDay : '';
+  } else if (s.dateTime) {
+    var a = kstParts(s.dateTime), b = e.dateTime ? kstParts(e.dateTime) : null;
+    if (!a) return null;
+    out.allDay = false;
+    out.date = a.date;
+    out.start = a.hm;
+    out.endDate = '';
+    out.end = '';
+    if (b) {
+      if (b.date === a.date) {
+        out.end = b.hm;
+      } else if (b.hm === '00:00' && b.date === addDays(a.date, 1)) {
+        /* 자정에 끝나는 일정은 그날 23:59로 적어 다음 날로 번지지 않게 합니다 */
+        out.end = '23:59';
+      } else if (b.date > a.date) {
+        out.endDate = b.date;
+        out.end = b.hm;
+      } else {
+        out.end = b.hm;
+      }
+    }
+  } else {
+    return null;
+  }
+  if (out.endDate && out.endDate < out.date) out.endDate = '';
+  return out;
+}
+/* 앱 일정 → 구글에 보낼 본문 */
+function calToGcal(e) {
+  var body = {};
+  var mm = calSplitMemo(e.memo);
+  body.summary = String(e.title || '').slice(0, 200) || '(제목 없음)';
+  if (mm.description) body.description = mm.description; else body.description = '';
+  if (mm.location) body.location = mm.location;
+  if (e.allDay) {
+    body.start = { date: e.date };
+    body.end = { date: addDays(e.endDate && e.endDate > e.date ? e.endDate : e.date, 1) };
+  } else {
+    var st = /^\d{1,2}:\d{2}$/.test(e.start || '') ? e.start : '09:00';
+    var startMin = hmMinutes(st);
+    if (startMin < 0) { st = '09:00'; startMin = 540; }
+    var endDate = (e.endDate && e.endDate > e.date) ? e.endDate : e.date;
+    var et = /^\d{1,2}:\d{2}$/.test(e.end || '') ? e.end : '';
+    var endMin = et ? hmMinutes(et) : -1;
+    if (endDate === e.date && (endMin < 0 || endMin <= startMin)) {
+      et = minutesHM(startMin + 60);
+      if (hmMinutes(et) <= startMin) endDate = addDays(e.date, 1);   /* 23:30 + 1시간 → 다음 날 */
+    } else if (endMin < 0) {
+      et = '23:59';
+    }
+    body.start = { dateTime: e.date + 'T' + st + ':00+09:00', timeZone: CAL_TZ };
+    body.end = { dateTime: endDate + 'T' + et + ':00+09:00', timeZone: CAL_TZ };
+  }
+  return body;
+}
+
+function createCalendarSync(opt) {
+  opt = opt || {};
+  var running = null;
+  var timer = null;
+  var status = 'off';        // off | syncing | on | auth | error | offline
+  var note = '';
+  var perm = false;          // 캘린더 권한이 모자람(403 insufficientPermissions)
+  var lastList = [];         // 마지막으로 받아온 구글 일정(중복 확인용)
+  var lastRun = 0;           // 자동 동기화가 너무 자주 돌지 않도록
+
+  function conf() { return calConf(); }
+  function ago(t) {
+    if (!t) return '';
+    var d = Date.now() - t;
+    if (d < 60000) return '방금';
+    if (d < 3600000) return Math.floor(d / 60000) + '분 전';
+    if (d < 86400000) return Math.floor(d / 3600000) + '시간 전';
+    return Math.floor(d / 86400000) + '일 전';
+  }
+  function isOn() { return !!(window.ScheduleDrive && ScheduleDrive.isOn()); }
+  function setStatus(s, msg) {
+    status = s;
+    if (msg !== undefined) note = msg;
+    paint();
+  }
+  function paint() {
+    try { if (opt.onStatus) opt.onStatus(status, note); } catch (e) {}
+  }
+  function label() {
+    if (!isOn()) return '미연결';
+    if (perm) return '캘린더 권한 필요';
+    if (running) return '동기화 중…';
+    if (status === 'offline') return '오프라인';
+    if (status === 'auth') return '연결 확인 필요';
+    if (status === 'error') return '동기화 오류';
+    var t = Number(conf().lastSyncAt) || 0;
+    return t ? '연결됨 · ' + ago(t) + ' 동기화' : '연결됨 · 동기화 대기';
+  }
+
+  function calError(res, body) {
+    var e = new Error('http-' + res.status);
+    e.status = res.status;
+    try {
+      var j = JSON.parse(body || '{}');
+      var er = (j.error && j.error.errors && j.error.errors[0]) || {};
+      if (er.reason) e.reason = String(er.reason);
+      if (er.message) e.detail = String(er.message);
+      else if (j.error && j.error.status) e.reason = e.reason || String(j.error.status);
+    } catch (x) {}
+    return e;
+  }
+  function isPermError(err) {
+    var r = String((err && err.reason) || '');
+    var m = String((err && err.detail) || '') + ' ' + String((err && err.message) || '');
+    return r === 'insufficientPermissions' || r === 'ACCESS_TOKEN_SCOPE_INSUFFICIENT' ||
+      /insufficient/i.test(r) || /insufficient authentication scopes/i.test(m);
+  }
+  function timeoutFetch(url, o) {
+    o = o || {};
+    if (window.AbortController) {
+      var ac = new AbortController();
+      o.signal = ac.signal;
+      var tm = setTimeout(function () { try { ac.abort(); } catch (e) {} }, 90000);
+      return fetch(url, o).then(function (r) { clearTimeout(tm); return r; }, function (e) { clearTimeout(tm); throw e; });
+    }
+    return fetch(url, o);
+  }
+  function api(url, o, retried) {
+    o = o || {};
+    o.headers = o.headers || {};
+    return GoogleAuth.ensure(false).then(function (tk) {
+      o.headers.Authorization = 'Bearer ' + tk;
+      return timeoutFetch(url, o);
+    }).then(function (res) {
+      if (res.status === 401 && !retried) {
+        GoogleAuth.invalidate();
+        return api(url, o, true);
+      }
+      if (res.status === 403) {
+        return res.text().then(function (t) { throw calError(res, t); });
+      }
+      return res;
+    });
+  }
+  function needJson(res) {
+    if (!res.ok) {
+      return res.text().then(function (t) { throw calError(res, t); });
+    }
+    return res.json().catch(function () { return {}; });
+  }
+
+  /* ── 받아오기 ─────────────────────────────────────── */
+  function list() {
+    var items = [];
+    var pageToken = '';
+    var guard = 0;
+    function step() {
+      var url = CAL_API + '?timeMin=' + encodeURIComponent(CAL_FROM) +
+        '&timeMax=' + encodeURIComponent(CAL_TO) +
+        '&singleEvents=true&orderBy=startTime&maxResults=2500&showDeleted=false' +
+        (pageToken ? '&pageToken=' + encodeURIComponent(pageToken) : '');
+      return api(url, { method: 'GET' }).then(needJson).then(function (j) {
+        (j.items || []).forEach(function (it) { items.push(it); });
+        pageToken = j.nextPageToken || '';
+        guard++;
+        if (pageToken && guard < 20) return step();
+        return { items: items, complete: !pageToken };
+      });
+    }
+    return step();
+  }
+  function findTwin(mapped) {
+    if (!mapped.title) return null;
+    var t = calNormTitle(mapped.title);
+    for (var i = 0; i < S.events.length; i++) {
+      var e = S.events[i];
+      if (e.deletedAt || e.gcalId) continue;
+      if (e.date !== mapped.date) continue;
+      if (calNormTitle(e.title) !== t) continue;
+      return e;
+    }
+    return null;
+  }
+  function applyFields(local, mapped, merge) {
+    var now = Date.now();
+    local.title = mapped.title || local.title || '';
+    if (merge && local.memo) {
+      /* 이 앱에 적어 둔 메모가 있으면 지키고, 구글 쪽 설명은 뒤에 덧붙입니다 */
+      if (mapped.memo && String(local.memo).indexOf(String(mapped.memo)) < 0) {
+        local.memo = String(local.memo).trim() + '\n\n' + String(mapped.memo).trim();
+      }
+    } else {
+      local.memo = mapped.memo || '';
+    }
+    local.date = mapped.date;
+    local.endDate = mapped.endDate || '';
+    local.allDay = !!mapped.allDay;
+    local.start = mapped.allDay ? '' : (mapped.start || '');
+    local.end = mapped.allDay ? '' : (mapped.end || '');
+    local.gcalId = mapped.gcalId;
+    local.gcalKey = mapped.gcalKey || '';
+    local.gcalUpdated = mapped.gcalUpdated || '';
+    local.gcalDirty = 0;
+    local.updatedAt = now;
+  }
+  function newLocal(mapped) {
+    var now = Date.now();
+    var e = normEvent({
+      id: uid(), date: mapped.date, endDate: mapped.endDate, allDay: mapped.allDay,
+      start: mapped.start, end: mapped.end, title: mapped.title, memo: mapped.memo,
+      color: 'blue', createdAt: now, updatedAt: now
+    });
+    e.gcalId = mapped.gcalId;
+    e.gcalKey = mapped.gcalKey || '';
+    e.gcalUpdated = mapped.gcalUpdated || '';
+    e.gcalDirty = 0;
+    S.events.push(e);
+    return e;
+  }
+  function pull(items, complete) {
+    var changed = false, links = false, created = 0, updated = 0;
+    var byId = {};
+    S.events.forEach(function (e) { if (e.gcalId) byId[e.gcalId] = e; });
+    var seen = {};
+    (items || []).forEach(function (it) {
+      if (!it || !it.id || it.status === 'cancelled') return;
+      seen[it.id] = 1;            /* 목록에 있으면 지워진 것이 아님 */
+      var mapped = calToLocal(it);
+      if (!mapped || !mapped.date) return;
+      if (mapped.date < CAL_FROM_DATE || mapped.date > CAL_TO_DATE) return;
+      var local = byId[it.id];
+      if (local) {
+        if (local.deletedAt) return;
+        if (Number(local.gcalDirty) > 0) return;      /* 이 기기의 수정이 아직 올라가는 중 */
+        if (String(it.updated || '') === String(local.gcalUpdated || '')) return;
+        applyFields(local, mapped, false);
+        changed = true; updated++;
+        return;
+      }
+      var twin = findTwin(mapped);
+      if (twin) {
+        applyFields(twin, mapped, true);
+        byId[it.id] = twin;
+        links = true; changed = true;
+        return;
+      }
+      var made = newLocal(mapped);
+      byId[it.id] = made;
+      created++; changed = true;
+    });
+    /* 구글에서 지운 일정 반영 — 목록을 끝까지 받아온 경우에만 */
+    var removed = 0;
+    if (complete) {
+      var gone = [];
+      S.events.forEach(function (e) {
+        if (!e.gcalId || e.deletedAt) return;
+        if (e.date < CAL_FROM_DATE || e.date > CAL_TO_DATE) return;
+        if (Number(e.gcalDirty) > 0) return;
+        if (seen[e.gcalId]) return;
+        gone.push(e);
+      });
+      var linkedLive = S.events.filter(function (e) { return e.gcalId && !e.deletedAt; }).length;
+      if (gone.length > 20 && gone.length > linkedLive / 2) {
+        /* 구글 쪽 목록을 잘못 읽었을 수 있으니 한꺼번에 지우지 않습니다 */
+        note = 'delete-guard';
+      } else {
+        var now = Date.now();
+        gone.forEach(function (e) {
+          e.deletedAt = now; e.updatedAt = now; e.gcalDirty = 0;
+        });
+        removed = gone.length;
+        if (removed) changed = true;
+      }
+    }
+    return { changed: changed, links: links, created: created, updated: updated, removed: removed };
+  }
+
+  /* ── 보내기 ───────────────────────────────────────── */
+  function post(body) {
+    return api(CAL_API + '?sendUpdates=none', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json; charset=UTF-8' },
+      body: JSON.stringify(body)
+    }).then(needJson);
+  }
+  function patch(id, body) {
+    return api(CAL_API + '/' + encodeURIComponent(id) + '?sendUpdates=none', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json; charset=UTF-8' },
+      body: JSON.stringify(body)
+    }).then(needJson);
+  }
+  function remove(id) {
+    return api(CAL_API + '/' + encodeURIComponent(id) + '?sendUpdates=none', { method: 'DELETE' }).then(function (res) {
+      if (res.status === 404 || res.status === 410) return true;   /* 이미 지워짐 */
+      if (!res.ok) return res.text().then(function (t) { throw calError(res, t); });
+      return true;
+    });
+  }
+  function push() {
+    var queue = S.events.filter(function (e) { return Number(e.gcalDirty) > 0; });
+    var i = 0, changed = false, done = 0;
+    function step() {
+      if (i >= queue.length) return Promise.resolve({ changed: changed, sent: done });
+      var e = queue[i++];
+      if (Number(e.gcalDirty) <= 0) return step();
+      if (queue.length > 1) setStatus('syncing', '일정 ' + (i) + '/' + queue.length + ' 올리는 중');
+      var p;
+      if (e.deletedAt) {
+        p = (e.gcalId ? remove(e.gcalId) : Promise.resolve(true)).then(function () {
+          e.gcalDirty = 0; e.gcalKey = ''; changed = true; done++;
+        });
+      } else if (e.gcalId) {
+        p = patch(e.gcalId, calToGcal(e)).then(function (j) {
+          e.gcalId = String((j && j.id) || e.gcalId);
+          e.gcalUpdated = String((j && j.updated) || '');
+          e.gcalDirty = 0; changed = true; done++;
+        }, function (err) {
+          if (err && err.status === 404) {
+            e.gcalId = ''; e.gcalUpdated = '';
+            return post(calToGcal(e)).then(function (j) {
+              e.gcalId = String((j && j.id) || '');
+              e.gcalUpdated = String((j && j.updated) || '');
+              e.gcalDirty = 0; changed = true; done++;
+            });
+          }
+          throw err;
+        });
+      } else {
+        p = post(calToGcal(e)).then(function (j) {
+          e.gcalId = String((j && j.id) || '');
+          e.gcalKey = j && j.recurringEventId ? String(j.recurringEventId) : '';
+          e.gcalUpdated = String((j && j.updated) || '');
+          e.gcalDirty = 0; changed = true; done++;
+        });
+      }
+      /* 한 건이라도 올라갔으면 바로 기기에 적어 둡니다(중간에 끊겨도 두 번 만들지 않도록) */
+      return p.then(function () { saveEvents(); return step(); });
+    }
+    return step();
+  }
+
+  /* ── 한 번의 동기화 ───────────────────────────────── */
+  function run() {
+    var res = { changed: false, links: false };
+    return list().then(function (r) {
+      lastList = r.items || [];
+      var m = pull(lastList, r.complete);
+      res.changed = m.changed; res.links = m.links;
+      return push();
+    }).then(function (p) {
+      res.changed = res.changed || p.changed;
+      saveEvents();
+      if (res.changed || res.links) {
+        bumpRev();
+        renderAll();
+      }
+      perm = false;
+      setCalConf({ lastSyncAt: Date.now() });
+      setStatus('on');
+      return true;
+    }).catch(function (err) {
+      saveEvents();
+      throw err;
+    });
+  }
+  function sync(manual) {
+    if (running) return running;
+    if (!isOn()) { paint(); return Promise.resolve(false); }
+    if (!navigator.onLine) { setStatus('offline'); return Promise.resolve(false); }
+    var dirty = S.events.some(function (e) { return Number(e.gcalDirty) > 0; });
+    if (!manual && !dirty && Date.now() - lastRun < 12000) { paint(); return Promise.resolve(true); }
+    lastRun = Date.now();
+    function attempt(fresh) {
+      return run().catch(function (err) {
+        if (isPermError(err)) {
+          perm = true;
+          if (manual && !fresh) {
+            /* 사용자가 직접 누른 동기화일 때만 권한 창을 다시 띄웁니다 */
+            toast('캘린더 권한을 다시 허용해 주세요');
+            return GoogleAuth.consent().then(function () {
+              perm = false;
+              return attempt(true);
+            });
+          }
+        }
+        throw err;
+      });
+    }
+    running = attempt(false).then(function (ok) {
+      running = null;
+      setStatus('on');
+      return ok;
+    }, function (err) {
+      running = null;
+      var m = String((err && err.message) || err || '');
+      if (isPermError(err)) {
+        perm = true;
+        setStatus('auth', 'calendar-scope');
+        return false;
+      }
+      if (!navigator.onLine || m === 'offline' || m === 'Failed to fetch' || m === 'Load failed' || m === 'http-0') {
+        setStatus('offline', m);
+      } else if (m === 'popup' || m === 'popup_failed_to_open' || m === 'access_denied' || m === 'interaction_required' || m === 'no-token') {
+        setStatus('auth', m);
+      } else {
+        setStatus('error', m);
+      }
+      return false;
+    });
+    setStatus('syncing');
+    return running;
+  }
+  function markChange() {
+    if (!isOn()) return;
+    if (!navigator.onLine) { setStatus('offline'); return; }
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(function () { timer = null; sync(false); }, 1500);
+  }
+  /* 이 기기에만 있고 아직 구글에 없는 일정 */
+  function legacy() {
+    var out = [];
+    S.events.forEach(function (e) {
+      if (e.deletedAt || e.gcalId) return;
+      if (e.date < CAL_FROM_DATE || e.date > CAL_TO_DATE) return;
+      out.push(e);
+    });
+    return out;
+  }
+  function legacyCount() { return isOn() ? legacy().length : 0; }
+  /* 기존 일정을 구글 캘린더로 한 번에 올립니다(사용자가 확인한 뒤에만 호출). */
+  function uploadLegacy() {
+    if (running) return running;
+    if (!isOn()) return Promise.resolve(0);
+    if (!navigator.onLine) { setStatus('offline'); return Promise.resolve(0); }
+    lastRun = Date.now();
+    setStatus('syncing');
+    running = list().then(function (r) {
+      lastList = r.items || [];
+      var m = pull(lastList, r.complete);      /* 먼저 받아 와 같은 날짜·제목은 잇습니다 */
+      if (m.changed || m.links) { saveEvents(); bumpRev(); renderAll(); }
+      var todo = legacy();
+      if (!todo.length) return { sent: 0 };
+      todo.forEach(function (e) { e.gcalDirty = Date.now(); });
+      saveEvents();
+      return push().then(function (p) {
+        setCalConf({ lastSyncAt: Date.now() });
+        return p;
+      });
+    }).then(function (r) {
+      running = null;
+      saveEvents();
+      bumpRev();
+      renderAll();
+      perm = false;
+      setStatus('on');
+      return Number((r && r.sent) || 0);
+    }, function (err) {
+      running = null;
+      saveEvents();
+      if (isPermError(err)) { perm = true; setStatus('auth', 'calendar-scope'); }
+      else setStatus('error', String((err && err.message) || err));
+      return -1;
+    });
+    return running;
+  }
+  function consentAgain() {
+    if (!navigator.onLine) { setStatus('offline'); return Promise.resolve(false); }
+    return GoogleAuth.consent().then(function () {
+      perm = false;
+      return sync(true);
+    }).catch(function (err) {
+      setStatus('auth', String((err && err.message) || err));
+      return false;
+    });
+  }
+  function init() {
+    status = isOn() ? (Number(conf().lastSyncAt) ? 'on' : 'on') : 'off';
+    paint();
+    window.addEventListener('online', function () { if (isOn()) sync(false); });
+    window.addEventListener('offline', function () { if (isOn()) setStatus('offline'); });
+    document.addEventListener('visibilitychange', function () { if (!document.hidden && isOn()) sync(false); });
+    window.addEventListener('focus', function () { if (isOn() && !document.hidden) sync(false); });
+    if (isOn()) setTimeout(function () { sync(false); }, 2600);
+  }
+  return {
+    init: init, sync: sync, markChange: markChange, label: label, refresh: paint,
+    status: function () { return status; }, note: function () { return note; }, ago: ago,
+    lastSyncAt: function () { return Number(conf().lastSyncAt) || 0; },
+    perm: function () { return perm; },
+    legacyCount: legacyCount, uploadLegacy: uploadLegacy, consentAgain: consentAgain,
+    isOn: isOn,
+    /* 시험·점검용 */
+    _pull: pull, _push: push, _list: list, _toLocal: calToLocal, _toGcal: calToGcal
+  };
+}
+
+var ScheduleCal = createCalendarSync({
+  onStatus: function () { paintDrive(); }
 });
 
 /* ==== render.js ==== */
@@ -1749,7 +2378,7 @@ function renderAll() {
   renderTabs();
   renderNav();
   renderView();
-  paintDrive(ScheduleDrive.label(), ScheduleDrive.status());
+  paintDrive();
 }
 function renderKeepScroll() {
   var y = window.scrollY;
@@ -1941,6 +2570,8 @@ function saveEditor() {
   var picked = $('#edColors .sw.on');
   e.color = picked ? picked.getAttribute('data-color') : 'blue';
   e.updatedAt = Date.now();
+  /* 구글 캘린더에도 반영할 변경 표시(미연결·오프라인이어도 남겨 두고 다음 동기화 때 올립니다) */
+  e.gcalDirty = e.updatedAt;
 
   var idx = -1;
   for (var i = 0; i < S.events.length; i++) if (S.events[i].id === e.id) { idx = i; break; }
@@ -1962,6 +2593,7 @@ function saveEditor() {
   var done = function () {
     return loadAtts().then(function () {
       bumpRev();
+      if (window.ScheduleCal) ScheduleCal.markChange();
       S.sel = ds;
       S.cursor = ds;
       closeEditorNow();
@@ -1983,6 +2615,7 @@ function deleteEvent(ev) {
     var now = Date.now();
     ev.deletedAt = now;
     ev.updatedAt = now;
+    ev.gcalDirty = now;      /* 구글 캘린더에서도 지우도록 표시 */
     saveEvents();
     var st = syncState();
     st.deleted = st.deleted || {};
@@ -1993,6 +2626,7 @@ function deleteEvent(ev) {
     });
     saveSyncState(st);
     bumpRev();
+    if (window.ScheduleCal) ScheduleCal.markChange();
     loadAtts().then(function () {
       closeEditorNow();
       renderAll();
@@ -2110,12 +2744,13 @@ function openDaySheet(ds) {
 
 function openMainMenu() {
   var size = S.atts.reduce(function (n, a) { return n + (a.size || 0); }, 0);
-  var h = '<button type="button" class="sheet-row" data-act="driveSheet"><span class="sr-l"><span class="sr-ico">☁️</span><span class="sr-tx">구글 드라이브<small>PC·폰 자동 동기화</small></span></span><span class="sr-v" id="menuDriveState">' + esc(ScheduleDrive.label()) + '</span></button>' +
+  var h = '<button type="button" class="sheet-row" data-act="driveSheet"><span class="sr-l"><span class="sr-ico">☁️</span><span class="sr-tx">구글 연동<small>드라이브·캘린더 자동 동기화</small></span></span><span class="sr-v" id="menuDriveState">' + esc(googleLabel()) + '</span></button>' +
+    (ScheduleDrive.isOn() ? '<button type="button" class="sheet-row" data-act="syncNow"><span class="sr-l"><span class="sr-ico">🔄</span><span class="sr-tx">지금 동기화<small>드라이브·캘린더를 바로 맞추기</small></span></span><span class="sr-v">양방향</span></button>' : '') +
     '<button type="button" class="sheet-row" data-act="printCurrent"><span class="sr-l"><span class="sr-ico">🖨</span><span class="sr-tx">인쇄 미리보기<small>지금 보는 ' + ({ day: '일간', week: '주간', month: '월간', year: '연간' }[S.view]) + ' 일정표</small></span></span><span class="sr-v">A4</span></button>' +
     '<button type="button" class="sheet-row" data-act="exportJSON"><span class="sr-l"><span class="sr-ico">💾</span><span class="sr-tx">전체 백업<small>일정·사진·파일을 파일 하나로</small></span></span><span class="sr-v">JSON</span></button>' +
     '<button type="button" class="sheet-row" data-act="restoreJSON"><span class="sr-l"><span class="sr-ico">📥</span><span class="sr-tx">백업 복원<small>백업 파일 불러오기</small></span></span></button>' +
     '<button type="button" class="sheet-row" data-act="about"><span class="sr-l"><span class="sr-ico">ℹ️</span><span class="sr-tx">음력·공휴일 안내 / 정보</span></span><span class="sr-v">v' + APP_VERSION + '</span></button>' +
-    '<p class="sheet-note">일정은 이 기기에 저장되고, 구글 드라이브를 연결하면 내 드라이브의 앱 전용 공간에만 보관됩니다. 사진 ' + S.atts.length + '개 · ' + fmtSize(size) + '</p>';
+    '<p class="sheet-note">일정은 이 기기에 저장되고, 구글을 연결하면 내 드라이브의 앱 전용 공간과 내 캘린더(primary)에만 보관됩니다. 사진 ' + S.atts.length + '개 · ' + fmtSize(size) + '</p>';
   openSheet('menu', '용우일정표', h);
 }
 
@@ -2123,44 +2758,101 @@ function openAbout() {
   var h = '<p class="sheet-note" style="padding-top:0;line-height:1.75">' +
     '<b>음력</b>은 한국천문연구원(KASI) 월력요항 표(1900~2050년)로 계산합니다. 그래서 설날·추석·부처님오신날과 초하루·보름이 실제 달력과 같습니다.<br><br>' +
     '<b>공휴일</b>은 양력 고정 공휴일, 음력 공휴일(설날·추석 연휴, 부처님오신날), 대체공휴일 규칙을 계산해 표시합니다. 선거일은 확인된 날만 넣었고, 정부가 따로 정하는 임시공휴일은 넣지 않았습니다.<br><br>' +
-    '<b>저장</b>: 일정은 이 기기 브라우저(localStorage), 사진·파일은 IndexedDB에 있습니다. 구글 드라이브를 연결하면 내 드라이브의 앱 전용 공간(appDataFolder)에 <b>' + SYNC_FILE + '</b> 파일로 자동 동기화되어 PC와 폰이 같아집니다.<br><br>' +
-    '<b>버전</b> ' + APP_VERSION + ' · 만든 날 2026-11-25</p>' +
+    '<b>저장</b>: 일정은 이 기기 브라우저(localStorage), 사진·파일은 IndexedDB에 있습니다. 구글을 연결하면 내 드라이브의 앱 전용 공간(appDataFolder)에 <b>' + SYNC_FILE + '</b> 파일로 보관되어 PC와 폰이 같아지고, 내 구글 캘린더(primary)와도 양방향으로 맞춰집니다.<br><br>' +
+    '<b>버전</b> ' + APP_VERSION + ' · 만든 날 2026-11-27</p>' +
     '<button type="button" class="btn" data-act="closeSheet">닫기</button>';
   openSheet('about', '안내', h);
 }
 
+/* ══════════════ 구글 연동 (드라이브 + 캘린더) ══════════════ */
+function gState() {
+  if (!ScheduleDrive.isOn()) return 'off';
+  if (ScheduleCal.perm()) return 'auth';
+  var d = ScheduleDrive.status(), c = ScheduleCal.status();
+  if (d === 'syncing' || c === 'syncing') return 'syncing';
+  if (d === 'auth' || c === 'auth') return 'auth';
+  if (d === 'error' || c === 'error') return 'error';
+  if (d === 'offline' || c === 'offline') return 'offline';
+  return 'on';
+}
+function googleLabel() {
+  var st = gState();
+  if (st === 'off') return '미연결';
+  if (st === 'syncing') return '동기화 중…';
+  if (st === 'auth') return '연결 확인 필요';
+  if (st === 'error') return '동기화 오류';
+  if (st === 'offline') return '오프라인';
+  var t = Math.max(ScheduleDrive.lastSyncAt(), ScheduleCal.lastSyncAt());
+  return '연결됨 · ' + (t ? ScheduleDrive.ago(t) + ' 동기화' : '동기화 대기');
+}
+function googleAgo() {
+  var t = Math.max(ScheduleDrive.lastSyncAt(), ScheduleCal.lastSyncAt());
+  return t ? ScheduleDrive.ago(t) + ' 동기화' : '동기화 대기';
+}
+function driveDetail() {
+  if (!ScheduleDrive.isOn()) return '미연결';
+  var st = ScheduleDrive.status();
+  if (st === 'syncing') return '동기화 중…';
+  if (st === 'auth') return '연결 확인 필요';
+  if (st === 'error') return '동기화 오류';
+  if (st === 'offline') return '오프라인';
+  var t = ScheduleDrive.lastSyncAt();
+  return t ? ScheduleDrive.ago(t) + ' 동기화' : '동기화 대기';
+}
+function calDetail() {
+  if (!ScheduleDrive.isOn()) return '미연결';
+  if (ScheduleCal.perm()) return '권한 필요';
+  var st = ScheduleCal.status();
+  if (st === 'syncing') return '동기화 중…';
+  if (st === 'auth') return '연결 확인 필요';
+  if (st === 'error') return '동기화 오류';
+  if (st === 'offline') return '오프라인';
+  var t = ScheduleCal.lastSyncAt();
+  return t ? ScheduleCal.ago(t) + ' 동기화' : '동기화 대기';
+}
+
+function syncAll(manual) {
+  if (!ScheduleDrive.isOn()) { toast('먼저 구글 연동을 연결해 주세요'); return Promise.resolve(false); }
+  return ScheduleDrive.sync(!!manual).then(function (driveOk) {
+    return ScheduleCal.sync(!!manual).then(function (calOk) { return !!driveOk && !!calOk; });
+  });
+}
+
 function openDriveSheet() {
   var on = ScheduleDrive.isOn();
-  var last = ScheduleDrive.lastSyncAt();
+  var legacy = ScheduleCal.legacyCount();
   var size = S.atts.reduce(function (n, a) { return n + (a.size || 0); }, 0);
-  var h = '<div class="sheet-row" style="border-bottom:0;min-height:44px"><span class="sr-l"><span class="sr-tx">동기화 상태</span></span><span class="sr-v" id="driveSheetStatus">' + esc(ScheduleDrive.label()) + '</span></div>';
-  if (last) h += '<div class="sheet-row" style="border-bottom:0;min-height:38px"><span class="sr-l"><span class="sr-tx">마지막 동기화</span></span><span class="sr-v">' + esc(ScheduleDrive.ago(last)) + '</span></div>';
+  var h = '<div class="sheet-row" style="border-bottom:0;min-height:44px"><span class="sr-l"><span class="sr-tx">구글 드라이브<small>일정·사진·파일 · 앱 전용 공간</small></span></span><span class="sr-v" id="gDriveState">' + esc(driveDetail()) + '</span></div>' +
+    '<div class="sheet-row" style="border-bottom:0;min-height:44px"><span class="sr-l"><span class="sr-tx">구글 캘린더<small>내 캘린더(primary) 양방향</small></span></span><span class="sr-v" id="gCalState">' + esc(calDetail()) + '</span></div>';
+  h += '<div class="sheet-row" style="border-bottom:0;min-height:38px"><span class="sr-l"><span class="sr-tx">마지막 동기화</span></span><span class="sr-v" id="gLastSync">' + esc(googleAgo()) + '</span></div>';
   h += '<p class="sheet-note" style="padding-top:2px">' + (on
-    ? '일정을 저장·수정·삭제할 때마다 구글 드라이브의 <b>앱 전용 공간</b>에 자동으로 올리고, 다른 기기에서 앱을 열면 최신 일정을 받아 옵니다. 내 드라이브 목록에는 보이지 않습니다.'
-    : '한 번 연결하면 PC와 폰의 일정이 자동으로 같아집니다. 연결하지 않아도 지금처럼 이 기기에만 저장됩니다.') + '</p>';
-  h += '<p class="sheet-note" style="padding-top:0">사진·파일 ' + S.atts.length + '개 · ' + fmtSize(size) + ' (한 개 8MB·합계 30MB까지 동기화)</p>';
+    ? '일정을 저장·수정·삭제하면 <b>구글 캘린더</b>와 드라이브의 앱 전용 공간에 함께 반영하고, 구글 캘린더나 다른 기기에서 바뀐 일정도 이 앱으로 받아 옵니다. 같은 날짜·제목의 일정은 두 번 만들지 않고 하나로 잇습니다.'
+    : '한 번 연결하면 PC·폰의 일정이 같아지고, 구글 캘린더와도 양쪽으로 맞춰집니다. 연결하지 않아도 지금처럼 이 기기에만 저장됩니다.') + '</p>';
+  h += '<p class="sheet-note" style="padding-top:0">사진·파일 ' + S.atts.length + '개 · ' + fmtSize(size) + ' (한 개 8MB·합계 30MB까지 드라이브 동기화)</p>';
   if (on) {
-    h += '<button type="button" class="btn primary" id="dSync" style="min-height:50px">🔄 지금 동기화</button>';
-    h += '<button type="button" class="btn danger-line" id="dOff" style="min-height:50px">🔌 연결 해제</button>';
+    h += '<button type="button" class="btn primary" id="gSync" style="min-height:50px">🔄 지금 동기화</button>';
+    if (ScheduleCal.perm()) h += '<button type="button" class="btn" id="gConsent" style="min-height:50px">📅 캘린더 권한 다시 허용</button>';
+    if (legacy > 0) h += '<button type="button" class="btn" id="gLegacy" style="min-height:50px">⬆️ 이 기기에만 있는 일정 ' + legacy + '개 캘린더에 올리기</button>';
+    h += '<button type="button" class="btn danger-line" id="gOff" style="min-height:50px">🔌 연결 해제</button>';
   } else {
-    h += '<button type="button" class="btn primary" id="dOn" style="min-height:50px">☁️ 구글 드라이브 연결</button>';
+    h += '<button type="button" class="btn primary" id="gOn" style="min-height:50px">☁️ 구글 연결 (드라이브 · 캘린더)</button>';
   }
   h += '<p class="sheet-sec">고급 설정</p>' +
     '<label style="font-size:12.5px;font-weight:800;color:#8b97a3" for="dClient">OAuth 클라이언트 ID</label>' +
     '<input id="dClient" type="text" autocapitalize="off" autocorrect="off" spellcheck="false" value="' + esc(ScheduleDrive.clientId()) + '" style="width:100%;height:46px;border:1.5px solid #dbe4e8;border-radius:11px;padding:0 11px;font-size:12.5px;margin:6px 0 8px">' +
     '<button type="button" class="btn" id="dSaveClient" style="min-height:44px">클라이언트 ID 저장</button>' +
-    '<p class="sheet-note">※ 드라이브를 연결하지 않아도 앱은 이 기기에만 저장하며 똑같이 동작합니다.</p>';
-  openSheet('drive', '☁️ 구글 드라이브', h);
+    '<p class="sheet-note">※ 구글을 연결하지 않아도 앱은 이 기기에만 저장하며 똑같이 동작합니다.</p>';
+  openSheet('drive', '☁️ 구글 연동', h);
 
-  var onBtn = $('#dOn');
+  var onBtn = $('#gOn');
   if (onBtn) onBtn.onclick = function () {
     if (!navigator.onLine) { toast('인터넷에 연결된 뒤 다시 눌러 주세요'); return; }
     onBtn.disabled = true;
-    toast('구글 창에서 ‘허용’을 눌러 주세요');
+    toast('구글 창에서 ‘허용’을 눌러 주세요 (드라이브·캘린더)');
     ScheduleDrive.connect().then(function () {
-      toast('구글 드라이브에 연결했습니다');
+      toast('구글에 연결했습니다');
       openDriveSheet();
-      paintDrive(ScheduleDrive.label(), ScheduleDrive.status());
+      ScheduleCal.sync(true).then(function () { paintDrive(); });
     }).catch(function (err) {
       onBtn.disabled = false;
       var m = String((err && err.message) || '');
@@ -2168,25 +2860,50 @@ function openDriveSheet() {
       else if (m === 'popup' || m === 'popup_failed_to_open') toast('팝업이 막혔습니다. 팝업 차단을 풀고 다시 눌러 주세요');
       else if (m === 'access_denied' || m === 'popup_closed') toast('허용을 누르지 않아 연결하지 않았습니다');
       else toast('연결하지 못했습니다. 잠시 뒤 다시 시도해 주세요');
-      paintDrive(ScheduleDrive.label(), ScheduleDrive.status());
+      paintDrive();
     });
   };
-  var syncBtn = $('#dSync');
+  var syncBtn = $('#gSync');
   if (syncBtn) syncBtn.onclick = function () {
     syncBtn.disabled = true;
-    ScheduleDrive.sync(true).then(function (ok) {
-      toast(ok ? '동기화했습니다' : '지금은 동기화하지 못했습니다');
+    toast('드라이브·캘린더를 맞추는 중입니다…');
+    syncAll(true).then(function (ok) {
+      toast(ok ? '구글과 맞췄습니다' : '지금은 다 맞추지 못했습니다. 상태를 확인해 주세요');
       openDriveSheet();
+      paintDrive();
     });
   };
-  var offBtn = $('#dOff');
+  var consentBtn = $('#gConsent');
+  if (consentBtn) consentBtn.onclick = function () {
+    consentBtn.disabled = true;
+    toast('구글 창에서 캘린더 허용을 눌러 주세요');
+    ScheduleCal.consentAgain().then(function () {
+      openDriveSheet();
+      paintDrive();
+    });
+  };
+  var legacyBtn = $('#gLegacy');
+  if (legacyBtn) legacyBtn.onclick = function () {
+    var n = ScheduleCal.legacyCount();
+    askConfirm('이 기기에만 있는 일정 <b>' + n + '개</b>를 구글 캘린더에 올릴까요?<br><span style="font-size:13.5px;color:#5b6b7b">같은 날짜·제목의 일정은 겹치지 않게 잇습니다. 제목이 다르면 비슷한 일정이 두 줄로 보일 수 있습니다.</span>', '올리기', false).then(function (ok) {
+      if (!ok) return;
+      legacyBtn.disabled = true;
+      toast(n + '개를 올리는 중입니다…');
+      ScheduleCal.uploadLegacy().then(function (sent) {
+        toast(sent > 0 ? sent + '개 일정을 구글 캘린더에 올렸습니다' : (sent === 0 ? '올릴 일정이 없습니다' : '일부만 올렸습니다. 잠시 뒤 다시 시도해 주세요'));
+        openDriveSheet();
+        paintDrive();
+      });
+    });
+  };
+  var offBtn = $('#gOff');
   if (offBtn) offBtn.onclick = function () {
-    askConfirm('구글 드라이브 연결을 해제할까요?<br><span style="font-size:13.5px;color:#5b6b7b">이 기기의 일정은 그대로 남고 자동 동기화만 멈춥니다.</span>', '연결 해제', true).then(function (ok) {
+    askConfirm('구글 연동을 해제할까요?<br><span style="font-size:13.5px;color:#5b6b7b">이 기기의 일정은 그대로 남고 자동 동기화만 멈춥니다. 구글 캘린더의 일정도 지우지 않습니다.</span>', '연결 해제', true).then(function (ok) {
       if (!ok) return;
       ScheduleDrive.disconnect().then(function () {
         toast('연결을 해제했습니다');
         openDriveSheet();
-        paintDrive(ScheduleDrive.label(), ScheduleDrive.status());
+        paintDrive();
       });
     });
   };
@@ -2198,15 +2915,19 @@ function openDriveSheet() {
   };
 }
 
-function paintDrive(text, st) {
+function paintDrive() {
+  var st = gState();
   var btn = $('#driveBarBtn');
-  if (!btn) return;
-  btn.className = 'drive-btn' + (st === 'on' ? ' on' : (st === 'syncing' ? ' sync' : ((st === 'auth' || st === 'error' || st === 'offline') ? ' warn' : '')));
+  if (btn) btn.className = 'drive-btn' + (st === 'on' ? ' on' : (st === 'syncing' ? ' sync' : ((st === 'auth' || st === 'error' || st === 'offline') ? ' warn' : '')));
+  var TEXT = { off: '구글 연동', syncing: '동기화 중…', on: '구글 연동됨', auth: '연결 확인 필요', error: '동기화 오류', offline: '오프라인' };
+  var HINT = { off: '드라이브·캘린더', syncing: '드라이브·캘린더', on: googleAgo(), auth: '눌러서 다시 연결', error: '눌러서 확인', offline: '인터넷 연결 확인' };
   var t = $('#driveText'), h = $('#driveHint');
-  if (t) t.textContent = (!st || st === 'off') ? '구글 드라이브 연결' : text;
-  if (h) h.textContent = (!st || st === 'off') ? 'PC·폰 동기화' : '눌러서 관리';
-  var s1 = $('#driveSheetStatus'); if (s1) s1.textContent = text;
-  var s2 = $('#menuDriveState'); if (s2) s2.textContent = text;
+  if (t) t.textContent = TEXT[st] || TEXT.off;
+  if (h) h.textContent = HINT[st] || HINT.off;
+  var s1 = $('#gDriveState'); if (s1) s1.textContent = driveDetail();
+  var s2 = $('#gCalState'); if (s2) s2.textContent = calDetail();
+  var s3 = $('#gLastSync'); if (s3) s3.textContent = googleAgo();
+  var s4 = $('#menuDriveState'); if (s4) s4.textContent = googleLabel();
 }
 
 /* ══════════════ 인쇄 ══════════════ */
@@ -2489,6 +3210,15 @@ function onViewClick(e) {
   }
   if (act === 'closeSearch') { S.searching = false; S.q = ''; renderAll(); return; }
   if (act === 'driveSheet') { closeSheet(); openDriveSheet(); return; }
+  if (act === 'syncNow') {
+    closeSheet();
+    toast('구글과 맞추는 중입니다…');
+    syncAll(true).then(function (ok) {
+      toast(ok ? '구글과 맞췄습니다' : '지금은 다 맞추지 못했습니다. 상태를 확인해 주세요');
+      paintDrive();
+    });
+    return;
+  }
   if (act === 'printCurrent') { closeSheet(); openPrint(); return; }
   if (act === 'exportJSON') { closeSheet(); exportJSON(); return; }
   if (act === 'restoreJSON') { closeSheet(); $('#restorePick').click(); return; }
@@ -2600,6 +3330,7 @@ function init() {
   loadAtts().then(function () { renderAll(); }).catch(function () { renderAll(); });
   renderAll();
   ScheduleDrive.init();
+  ScheduleCal.init();
   registerSW();
   if (p.printPhotos === false) $('#optPhotos').checked = false;
   if (p.printMemo === false) $('#optMemo').checked = false;
