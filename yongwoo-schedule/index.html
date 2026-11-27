@@ -944,7 +944,7 @@ function normEvent(e) {
     deletedAt: Number(e.deletedAt) || 0,
     /* 구글 캘린더와 이어진 일정 표시 */
     gcalId: String(e.gcalId || ''),
-    gcalKey: String(e.gcalKey || ''),
+    gcalEventKey: String(e.gcalEventKey || ''),
     gcalUpdated: String(e.gcalUpdated || ''),
     gcalDirty: Number(e.gcalDirty) || 0
   };
@@ -1420,7 +1420,7 @@ function sBuild() {
       kind: 'event', id: e.id, date: e.date, endDate: e.endDate, allDay: !!e.allDay,
       start: e.start, end: e.end, title: e.title, memo: e.memo, color: e.color,
       createdAt: e.createdAt, updatedAt: e.updatedAt, deletedAt: e.deletedAt,
-      gcalId: e.gcalId || '', gcalKey: e.gcalKey || '', gcalUpdated: e.gcalUpdated || '', gcalDirty: Number(e.gcalDirty) || 0,
+      gcalId: e.gcalId || '', gcalEventKey: e.gcalEventKey || '', gcalUpdated: e.gcalUpdated || '', gcalDirty: Number(e.gcalDirty) || 0,
       upd: Math.max(Number(e.updatedAt) || 0, Number(e.deletedAt) || 0)
     });
   });
@@ -1521,7 +1521,7 @@ var ScheduleDrive = createDriveSync({
      이미 이 앱에 같은 날짜·제목으로 있는 일정은 새로 만들지 않고 잇습니다(gcalId).
    - 보내기: 앱에서 추가·수정·삭제한 일정은 구글 캘린더에도 그대로 반영합니다.
    - 구글 쪽에서 고치거나 지운 일정도 다음 동기화 때 앱에 반영합니다.
-   일정 본문에는 gcalId·gcalKey·gcalUpdated·gcalDirty 를 함께 적어 두어
+   일정 본문에는 gcalId·gcalEventKey·gcalUpdated·gcalDirty 를 함께 적어 두어
    기기(드라이브 동기화)와 구글 캘린더 사이에서 같은 일정을 두 번 만들지 않습니다. */
 var CAL_API = 'https://www.googleapis.com/calendar/v3/calendars/primary/events';
 var CAL_TZ = 'Asia/Seoul';
@@ -1583,7 +1583,7 @@ function calToLocal(it) {
     title: String(it.summary || '').slice(0, 200),
     memo: calMemoOf(it),
     gcalId: String(it.id),
-    gcalKey: it.recurringEventId ? (String(it.recurringEventId) + ':' + String((it.originalStartTime && (it.originalStartTime.date || it.originalStartTime.dateTime)) || '')) : '',
+    gcalEventKey: it.recurringEventId ? (String(it.recurringEventId) + ':' + String((it.originalStartTime && (it.originalStartTime.date || it.originalStartTime.dateTime)) || '')) : '',
     gcalUpdated: String(it.updated || '')
   };
   if (s.date) {
@@ -1788,7 +1788,7 @@ function createCalendarSync(opt) {
     local.start = mapped.allDay ? '' : (mapped.start || '');
     local.end = mapped.allDay ? '' : (mapped.end || '');
     local.gcalId = mapped.gcalId;
-    local.gcalKey = mapped.gcalKey || '';
+    local.gcalEventKey = mapped.gcalEventKey || '';
     local.gcalUpdated = mapped.gcalUpdated || '';
     local.gcalDirty = 0;
     local.updatedAt = now;
@@ -1801,7 +1801,7 @@ function createCalendarSync(opt) {
       color: 'blue', createdAt: now, updatedAt: now
     });
     e.gcalId = mapped.gcalId;
-    e.gcalKey = mapped.gcalKey || '';
+    e.gcalEventKey = mapped.gcalEventKey || '';
     e.gcalUpdated = mapped.gcalUpdated || '';
     e.gcalDirty = 0;
     S.events.push(e);
@@ -1898,7 +1898,7 @@ function createCalendarSync(opt) {
       var p;
       if (e.deletedAt) {
         p = (e.gcalId ? remove(e.gcalId) : Promise.resolve(true)).then(function () {
-          e.gcalDirty = 0; e.gcalKey = ''; changed = true; done++;
+          e.gcalDirty = 0; e.gcalEventKey = ''; changed = true; done++;
         });
       } else if (e.gcalId) {
         p = patch(e.gcalId, calToGcal(e)).then(function (j) {
@@ -1919,7 +1919,7 @@ function createCalendarSync(opt) {
       } else {
         p = post(calToGcal(e)).then(function (j) {
           e.gcalId = String((j && j.id) || '');
-          e.gcalKey = j && j.recurringEventId ? String(j.recurringEventId) : '';
+          e.gcalEventKey = j && j.recurringEventId ? String(j.recurringEventId) : '';
           e.gcalUpdated = String((j && j.updated) || '');
           e.gcalDirty = 0; changed = true; done++;
         });
